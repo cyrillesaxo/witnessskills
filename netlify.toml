@@ -1,0 +1,21 @@
+# Netlify config for WitnessSkills
+# React + TypeScript + Vite + Supabase
+
+[build.environment]
+NODE_VERSION = "22"
+NODE_OPTIONS = "--max-old-space-size=4096"
+NPM_FLAGS = "--prefer-offline"
+
+[build]
+command = "npm run build"
+publish = "dist"
+
+[functions]
+directory = "netlify/functions"
+node_bundler = "esbuild"
+
+# SPA fallback — all routes serve index.html
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
