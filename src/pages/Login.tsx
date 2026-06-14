@@ -1,80 +1,149 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Award } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Zap, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+function BackgroundGlow() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/5 to-cyan-500/5 rounded-full blur-3xl" />
+    </div>
+  );
+}
+
+const PAGE_BG = 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden';
+const CARD_CLS = 'backdrop-blur-xl bg-slate-800/40 rounded-2xl shadow-2xl border border-slate-700/60 p-8';
+const INPUT_CLS = 'w-full px-4 py-3 bg-slate-900/50 border border-slate-600/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 text-white placeholder-slate-500 transition-all duration-300 hover:border-slate-500';
+const LABEL_CLS = 'block text-sm font-medium text-slate-300 mb-2';
 
 export default function Login() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
-    const [email, setEmail] = useState('');
-      const [password, setPassword] = useState('');
-        const [loading, setLoading] = useState(false);
-          const [error, setError] = useState<string | null>(null);
-            const [mode, setMode] = useState<'login' | 'signup'>('login');
 
-              async function handleSubmit(e: React.FormEvent) {
-                  e.preventDefault();
-                      setLoading(true);
-                          setError(null);
-                              const { error } = mode === 'login'
-                                    ? await supabase.auth.signInWithPassword({ email, password })
-                                          : await supabase.auth.signUp({ email, password });
-                                              if (error) {
-                                                    setError(error.message);
-                                                        } else {
-                                                              navigate('/');
-                                                                  }
-                                                                      setLoading(false);
-                                                                        }
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        await signUp(email, password);
+      } else {
+        await signIn(email, password);
+      }
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-                                                                          return (
-                                                                              <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                                                                                    <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-sm shadow-sm">
-                                                                                            <div className="flex items-center justify-center gap-2 mb-6">
-                                                                                                      <Award className="w-7 h-7 text-indigo-600" />
-                                                                                                                <h1 className="text-2xl font-bold text-gray-900">WitnessSkills</h1>
-                                                                                                                        </div>
-                                                                                                                                <h2 className="text-center text-gray-600 mb-6 text-sm">
-                                                                                                                                          {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
-                                                                                                                                                  </h2>
-                                                                                                                                                          <form onSubmit={handleSubmit} className="space-y-4">
-                                                                                                                                                                    <div>
-                                                                                                                                                                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                                                                                                                                                                            <input
-                                                                                                                                                                                                          type="email"
-                                                                                                                                                                                                                        required
-                                                                                                                                                                                                                                      value={email}
-                                                                                                                                                                                                                                                    onChange={e => setEmail(e.target.value)}
-                                                                                                                                                                                                                                                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                                                                                                                                                                                                                                                                placeholder="you@example.com"
-                                                                                                                                                                                                                                                                                            />
-                                                                                                                                                                                                                                                                                                      </div>
-                                                                                                                                                                                                                                                                                                                <div>
-                                                                                                                                                                                                                                                                                                                            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                                                                                                                                                                                                                                                                                                                        <input
-                                                                                                                                                                                                                                                                                                                                                      type="password"
-                                                                                                                                                                                                                                                                                                                                                                    required
-                                                                                                                                                                                                                                                                                                                                                                                  value={password}
-                                                                                                                                                                                                                                                                                                                                                                                                onChange={e => setPassword(e.target.value)}
-                                                                                                                                                                                                                                                                                                                                                                                                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                                                                                                                                                                                                                                                                                                                                                                                                            placeholder="Your password"
-                                                                                                                                                                                                                                                                                                                                                                                                                                        />
-                                                                                                                                                                                                                                                                                                                                                                                                                                                  </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            {error && <p className="text-sm text-red-600">{error}</p>}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <button
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  type="submit"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              disabled={loading}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    >
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </form>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <p className="text-center text-sm text-gray-500 mt-4">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <button onClick={() => setMode(m => m === 'login' ? 'signup' : 'login')} className="text-indigo-600 hover:underline">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          {mode === 'login' ? 'Sign up' : 'Sign in'}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </p>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
+  return (
+    <div className={PAGE_BG}>
+      <BackgroundGlow />
+      <div className="max-w-md w-full relative z-10">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-emerald-500/30 mb-4">
+            <Zap className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">WitnessSkills</h1>
+          <p className="text-slate-400 mt-1 text-sm text-center">Evidence-based professional skill documentation</p>
+        </div>
+
+        <div className={CARD_CLS}>
+          <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center">
+            <p className="text-xs font-medium text-emerald-200">Document your skills. Build your evidence portfolio.</p>
+            <p className="mt-1 text-xs text-emerald-300/80">Track competencies with proof. Advance your career with confidence.</p>
+          </div>
+
+          <div className="mb-5 text-center">
+            <h2 className="text-lg font-semibold text-white">
+              {isSignUp ? 'Create your account' : 'Sign in to WitnessSkills'}
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">
+              {isSignUp ? 'Start documenting your professional skills today.' : 'Continue building your skill portfolio.'}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className={LABEL_CLS}>Email address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={INPUT_CLS + ' pl-10'}
+                  placeholder="you@company.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className={LABEL_CLS}>Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={INPUT_CLS + ' pl-10 pr-10'}
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-3 backdrop-blur-sm bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-3 px-4 rounded-xl font-semibold hover:shadow-2xl hover:shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-300 shadow-lg"
+            >
+              {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+              className="text-sm text-slate-400 hover:text-emerald-400 transition-colors duration-300"
+            >
+              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-slate-600">WitnessSkills — Professional skill evidence platform</p>
+        </div>
+      </div>
+    </div>
+  );
+}
