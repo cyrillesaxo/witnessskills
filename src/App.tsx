@@ -4,7 +4,6 @@ import { useAuth } from './context/useAuth';
 import BackgroundGlow from './components/ui/BackgroundGlow';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import SetupRequired from './components/ui/SetupRequired';
-import { supabase } from './lib/supabase';
 import Dashboard from './pages/Dashboard';
 import Skills from './pages/Skills';
 import Profile from './pages/Profile';
@@ -13,6 +12,11 @@ import Login from './pages/Login';
 import Apply from './pages/Apply';
 import ResumeBuilder from './pages/ResumeBuilder';
 import GapAnalyzer from './pages/GapAnalyzer';
+
+const isSupabaseConfigured = !!(
+  import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 function LoadingScreen() {
   return (
@@ -30,39 +34,39 @@ function LoadingScreen() {
   );
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-}
-
 function AppRoutes() {
   const { user, loading } = useAuth();
+
   if (loading) return <LoadingScreen />;
+
+  if (!isSupabaseConfigured) {
+    return <SetupRequired />;
+  }
+
   return (
-    <ErrorBoundary>
-      <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/skills" element={<ProtectedRoute><Skills /></ProtectedRoute>} />
-        <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/apply" element={<ProtectedRoute><Apply /></ProtectedRoute>} />
-        <Route path="/apply/resume" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
-        <Route path="/apply/gaps" element={<ProtectedRoute><GapAnalyzer /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </ErrorBoundary>
+    <Routes>
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
+      <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" replace />} />
+      <Route path="/skills" element={user ? <Skills /> : <Navigate to="/login" replace />} />
+      <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" replace />} />
+      <Route path="/learn" element={user ? <Learn /> : <Navigate to="/login" replace />} />
+      <Route path="/audit" element={<Navigate to="/learn?tab=audit" replace />} />
+      <Route path="/apply" element={user ? <Apply /> : <Navigate to="/login" replace />} />
+      <Route path="/apply/resume" element={user ? <ResumeBuilder /> : <Navigate to="/login" replace />} />
+      <Route path="/apply/gaps" element={user ? <GapAnalyzer /> : <Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider supabase={supabase}>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
-                                                        }
+}
