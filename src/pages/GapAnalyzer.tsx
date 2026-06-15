@@ -1,84 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { TrendingUp, Brain, AlertCircle, CheckCircle, XCircle, Zap, Plus } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { supabase } from '../lib/supabase';
 import AppShell from '../components/ui/AppShell';
-import {
-  Search, ChevronLeft, AlertCircle, CheckCircle,
-  XCircle, PlusCircle, BookOpen, TrendingUp, Zap
-} from 'lucide-react';
+import BackgroundGlow from '../components/ui/BackgroundGlow';
 
 interface Skill {
   id: string;
   name: string;
-  domain?: string;
+  level: string;
 }
 
 interface GapResult {
   skill: string;
   inPortfolio: boolean;
-  witnessed: boolean;
-  portfolioId?: string;
-}
-
-// Common tech skill keywords to look for in JD text
-const SKILL_PATTERNS = [
-  // AI/ML
-  'machine learning', 'deep learning', 'llm', 'large language model', 'rag', 'vector database',
-  'langchain', 'openai', 'anthropic', 'ai governance', 'mlops', 'model deployment',
-  // Cloud
-  'aws', 'azure', 'gcp', 'google cloud', 'kubernetes', 'docker', 'terraform', 'ansible',
-  'cloudformation', 'eks', 'aks', 'lambda', 'serverless', 'microservices',
-  // Security/IAM
-  'vault', 'hashicorp', 'pki', 'oauth2', 'oidc', 'jwt', 'saml', 'okta', 'iam',
-  'zero trust', 'secrets management', 'rbac', 'identity', 'sso',
-  // Integration/Data
-  'kafka', 'event-driven', 'api gateway', 'graphql', 'rest api', 'grpc',
-  'postgresql', 'mongodb', 'redis', 'elasticsearch', 'supabase',
-  // Languages/Frameworks
-  'java', 'spring boot', 'python', 'typescript', 'react', 'node.js', 'go', 'rust',
-  // Architecture
-  'solutions architect', 'enterprise architect', 'platform engineering', 'domain-driven',
-  'togaf', 'zachman', 'c4 model', 'hexagonal', 'event sourcing', 'cqrs',
-  // Compliance
-  'sox', 'hipaa', 'pci-dss', 'gdpr', 'fedramp', 'nist', 'iso 27001', 'soc 2',
-  'audit trail', 'compliance', 'governance',
-  // Soft skills / leadership
-  'technical leadership', 'staff engineer', 'principal engineer', 'architecture review',
-  'cross-functional', 'stakeholder management', 'technical strategy',
-];
-
-function extractSkillsFromJD(jd: string): string[] {
-  const lower = jd.toLowerCase();
-  const found = new Set<string>();
-  for (const pattern of SKILL_PATTERNS) {
-    if (lower.includes(pattern)) {
-      found.add(pattern);
-    }
-  }
-  // Also extract capitalized terms (acronyms and proper nouns)
-  const words = jd.match(/\b[A-Z][A-Z0-9]{2,}\b/g) || [];
-  for (const w of words) {
-    if (!['THE', 'AND', 'OR', 'FOR', 'NOT', 'ARE', 'YOU', 'OUR', 'WILL', 'WITH', 'HAVE', 'THIS', 'FROM'].includes(w)) {
-      found.add(w.toLowerCase());
-    }
-  }
-  return Array.from(found).sort();
+  portfolioLevel?: string;
+  isGap: boolean;
 }
 
 export default function GapAnalyzer() {
-  useDocumentTitle('JD Gap Analyzer · WitnessSkills');
+  useDocumentTitle('Gap Analyzer');
   const { user } = useAuth();
-
-  const [jdText, setJdText] = useState('');
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [loadingSkills, setLoadingSkills] = useState(true);
+  const [jdText, setJdText] = useState('');
   const [results, setResults] = useState<GapResult[] | null>(null);
-  const [addingToLearn, setAddingToLearn] = useState<Set<string>>(new Set());
-  const [addedToLearn, setAddedToLearn] = useState<Set<string>>(new Set());
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addedToQueue, setAddedToQueue] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
@@ -86,47 +37,98 @@ export default function GapAnalyzer() {
   }, [user]);
 
   async function loadSkills() {
-    setLoading(true);
     try {
+      setLoadingSkills(true);
       const { data, error: err } = await supabase
         .from('skills')
-        .select('id, name, domain')
+        .select('id, name, level')
         .eq('user_id', user!.id);
-      if (err) throw err;
+      if (err) throw new Error(err.message);
       setSkills(data || []);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load skills');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      setLoadingSkills(false);
     }
   }
 
-  function analyze() {
-    if (!jdText.trim()) return;
-    setAnalyzing(true);
+  function extractSkillsFromJD(text: string): string[] {
+    // Keyword extraction: look for tech terms, frameworks, tools
+    const techPatterns = [
+      /\b(Python|JavaScript|TypeScript|Java|Go|Rust|C\+\+|C#|Ruby|PHP|Swift|Kotlin)\b/gi,
+      /\b(React|Vue|Angular|Next\.js|Node\.js|Express|Django|FastAPI|Spring|Rails)\b/gi,
+      /\b(AWS|GCP|Azure|Kubernetes|Docker|Terraform|Ansible|Jenkins|GitHub Actions)\b/gi,
+      /\b(PostgreSQL|MySQL|MongoDB|Redis|Elasticsearch|Kafka|RabbitMQ|Cassandra)\b/gi,
+      /\b(Machine Learning|Deep Learning|NLP|LLM|GPT|RAG|Vector|Embedding|Fine-tuning)\b/gi,
+      /\b(Microservices|REST|GraphQL|gRPC|API|OAuth|JWT|SAML|SSO|PKI|Vault)\b/gi,
+      /\b(Agile|Scrum|Kanban|CI\/CD|DevOps|SRE|Platform Engineering|MLOps)\b/gi,
+      /\b(React Native|Flutter|iOS|Android|Mobile|PWA)\b/gi,
+      /\b(Spark|Hadoop|Databricks|Snowflake|dbt|Airflow|ETL|Data Pipeline)\b/gi,
+      /\b(Prometheus|Grafana|Datadog|OpenTelemetry|Jaeger|Zipkin)\b/gi,
+      /\b(Linux|Unix|Bash|Shell|PowerShell|Windows Server)\b/gi,
+      /\b(Git|SVN|Mercurial|CI|CD|GitOps|ArgoCD|FluxCD)\b/gi,
+    ];
 
-    const jdSkills = extractSkillsFromJD(jdText);
-    const portfolioNames = skills.map(s => s.name.toLowerCase());
+    const found = new Set<string>();
+    for (const pattern of techPatterns) {
+      const matches = text.match(pattern) || [];
+      for (const m of matches) {
+        found.add(m.trim());
+      }
+    }
 
-    const gapResults: GapResult[] = jdSkills.map(skill => {
-      const match = skills.find(s => s.name.toLowerCase().includes(skill) || skill.includes(s.name.toLowerCase()));
-      return {
-        skill,
-        inPortfolio: !!match,
-        witnessed: !!match,
-        portfolioId: match?.id,
-      };
-    });
+    // Also extract capitalized multi-word phrases (2-3 words)
+    const phraseMatches = text.match(/\b[A-Z][a-zA-Z]+(\s[A-Z][a-zA-Z]+){1,2}\b/g) || [];
+    for (const phrase of phraseMatches) {
+      if (phrase.length >= 4 && phrase.length <= 40) {
+        found.add(phrase);
+      }
+    }
 
-    setResults(gapResults);
-    setAnalyzing(false);
+    return Array.from(found).slice(0, 30);
   }
 
-  async function addToLearnQueue(skillName: string) {
-    if (!user) return;
-    setAddingToLearn(prev => new Set(prev).add(skillName));
+  function analyzeGaps() {
+    if (!jdText.trim()) return;
+    setAnalyzing(true);
+    setError(null);
+
     try {
-      // Add to skill_gaps table
+      const jdSkills = extractSkillsFromJD(jdText);
+      const portfolioNames = new Set(skills.map(s => s.name.toLowerCase()));
+
+      const gapResults: GapResult[] = jdSkills.map(jdSkill => {
+        const match = skills.find(s =>
+          s.name.toLowerCase() === jdSkill.toLowerCase() ||
+          s.name.toLowerCase().includes(jdSkill.toLowerCase()) ||
+          jdSkill.toLowerCase().includes(s.name.toLowerCase())
+        );
+        return {
+          skill: jdSkill,
+          inPortfolio: !!match,
+          portfolioLevel: match?.level,
+          isGap: !match,
+        };
+      });
+
+      // Sort: gaps first, then matched
+      gapResults.sort((a, b) => {
+        if (a.isGap && !b.isGap) return -1;
+        if (!a.isGap && b.isGap) return 1;
+        return 0;
+      });
+
+      setResults(gapResults);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function addGapToLearnQueue(skillName: string) {
+    if (!user) return;
+    try {
       await supabase.from('skill_gaps').upsert({
         user_id: user.id,
         skill_name: skillName,
@@ -134,209 +136,177 @@ export default function GapAnalyzer() {
         frequency: 1,
         added_to_learn: true,
       }, { onConflict: 'user_id,skill_name' });
-
-      // Also add to skills table if not present
-      const existing = skills.find(s => s.name.toLowerCase() === skillName.toLowerCase());
-      if (!existing) {
-        await supabase.from('skills').insert({
-          user_id: user.id,
-          name: skillName,
-          source: 'job_market',
-          level: 'beginner',
-        });
-      }
-
-      setAddedToLearn(prev => new Set(prev).add(skillName));
-      await loadSkills();
-    } catch (e) {
-      console.error('Failed to add skill:', e);
-    } finally {
-      setAddingToLearn(prev => {
-        const next = new Set(prev);
-        next.delete(skillName);
-        return next;
-      });
+      setAddedToQueue(prev => new Set(prev).add(skillName));
+    } catch (err) {
+      console.error('Failed to add to queue:', err);
     }
   }
 
-  const gaps = results?.filter(r => !r.inPortfolio) || [];
-  const covered = results?.filter(r => r.inPortfolio) || [];
-  const coverageRate = results && results.length > 0
-    ? Math.round((covered.length / results.length) * 100)
+  const gaps = results?.filter(r => r.isGap) || [];
+  const matched = results?.filter(r => !r.isGap) || [];
+  const coveragePercent = results && results.length > 0
+    ? Math.round((matched.length / results.length) * 100)
     : 0;
+
+  const LEVEL_COLORS: Record<string, string> = {
+    expert: 'text-amber-400 bg-amber-500/10 border border-amber-500/20',
+    advanced: 'text-purple-400 bg-purple-500/10 border border-purple-500/20',
+    intermediate: 'text-teal-400 bg-teal-500/10 border border-teal-500/20',
+    beginner: 'text-blue-400 bg-blue-500/10 border border-blue-500/20',
+  };
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+        <BackgroundGlow />
+        <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 space-y-6">
 
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link to="/apply" className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all">
-            <ChevronLeft className="w-4 h-4" />
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Search className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">JD Gap Analyzer</h1>
-              <p className="text-slate-400 text-sm">Paste a job description — find your skill gaps and close them</p>
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <TrendingUp className="w-8 h-8 text-purple-400" />
+              JD Gap Analyzer
+            </h1>
+            <p className="text-slate-400 mt-1">
+              Paste a job description to instantly see which skills you have and which are gaps — each gap links directly to its training node.
+            </p>
+          </div>
+
+          {/* JD Input */}
+          <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 space-y-4">
+            <label className="text-sm font-medium text-slate-300">Job Description</label>
+            <textarea
+              value={jdText}
+              onChange={e => setJdText(e.target.value)}
+              placeholder="Paste the full job description here — requirements, qualifications, tech stack..."
+              className="w-full h-44 bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20"
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-slate-500">
+                {loadingSkills ? 'Loading portfolio...' : skills.length + ' skills in your portfolio'}
+              </p>
+              <button
+                onClick={analyzeGaps}
+                disabled={!jdText.trim() || analyzing || loadingSkills}
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                <Zap className="w-4 h-4" />
+                {analyzing ? 'Analyzing...' : 'Analyze Gaps'}
+              </button>
             </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="flex items-center gap-3 p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-300 text-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {error}
-          </div>
-        )}
-
-        {/* JD Input */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
-          <label className="block text-white font-medium mb-3">Job Description</label>
-          <textarea
-            value={jdText}
-            onChange={e => setJdText(e.target.value)}
-            placeholder="Paste the full job description here..."
-            rows={10}
-            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 text-sm resize-none"
-          />
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-slate-500">{jdText.length} characters · {loading ? 'Loading portfolio...' : `${skills.length} skills in portfolio`}</span>
-            <button
-              onClick={analyze}
-              disabled={!jdText.trim() || analyzing || loading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 disabled:opacity-50 rounded-xl text-white font-medium text-sm transition-all shadow-lg shadow-violet-900/30"
-            >
-              <Zap className="w-4 h-4" />
-              {analyzing ? 'Analyzing...' : 'Analyze JD'}
-            </button>
-          </div>
-        </div>
-
-        {/* Results */}
-        {results && (
-          <div className="space-y-5">
-
-            {/* Coverage summary */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 text-center">
-                <div className="text-3xl font-bold text-white mb-1">{results.length}</div>
-                <div className="text-slate-400 text-sm">Skills detected</div>
-              </div>
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 text-center">
-                <div className="text-3xl font-bold text-emerald-400 mb-1">{covered.length}</div>
-                <div className="text-slate-400 text-sm">In your portfolio</div>
-              </div>
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 text-center">
-                <div className={`text-3xl font-bold mb-1 ${gaps.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{gaps.length}</div>
-                <div className="text-slate-400 text-sm">Gaps to close</div>
-              </div>
+          {/* Error */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
             </div>
+          )}
 
-            {/* Coverage bar */}
-            <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-white font-medium flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-violet-400" />
-                  Portfolio coverage
-                </span>
-                <span className={`text-lg font-bold ${coverageRate >= 70 ? 'text-emerald-400' : coverageRate >= 50 ? 'text-amber-400' : 'text-red-400'}`}>
-                  {coverageRate}%
-                </span>
-              </div>
-              <div className="w-full bg-slate-700/50 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${coverageRate >= 70 ? 'bg-emerald-500' : coverageRate >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
-                  style={{ width: `${coverageRate}%` }}
-                />
-              </div>
-              {coverageRate >= 70 && (
-                <p className="text-emerald-400 text-xs mt-2">Strong match — you cover most required skills.</p>
-              )}
-              {coverageRate < 70 && coverageRate >= 50 && (
-                <p className="text-amber-400 text-xs mt-2">Partial match — consider training on the gaps before applying.</p>
-              )}
-              {coverageRate < 50 && (
-                <p className="text-red-400 text-xs mt-2">Low coverage — significant skill development needed for this role.</p>
-              )}
-            </div>
-
-            {/* Gaps to close */}
-            {gaps.length > 0 && (
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-2 p-5 border-b border-slate-700/50">
-                  <XCircle className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-white font-medium">Gaps to close ({gaps.length})</h3>
-                  <span className="ml-auto text-xs text-slate-400">Click "+ Add to Learn" to queue for training</span>
+          {/* Results */}
+          {results && (
+            <div className="space-y-6">
+              {/* Coverage summary */}
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-white">JD Coverage</h2>
+                  <span className={'text-2xl font-bold ' + (coveragePercent >= 70 ? 'text-emerald-400' : coveragePercent >= 40 ? 'text-amber-400' : 'text-red-400')}>
+                    {coveragePercent}%
+                  </span>
                 </div>
-                <div className="divide-y divide-slate-700/30">
-                  {gaps.map(gap => (
-                    <div key={gap.skill} className="flex items-center justify-between p-4 hover:bg-slate-700/20 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <XCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                        <span className="text-white text-sm capitalize">{gap.skill}</span>
-                      </div>
-                      {addedToLearn.has(gap.skill) ? (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs">
-                          <CheckCircle className="w-3 h-3" />
-                          Added to skills
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addToLearnQueue(gap.skill)}
-                          disabled={addingToLearn.has(gap.skill)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/30 rounded-lg text-violet-300 hover:text-violet-200 text-xs transition-all disabled:opacity-50"
-                        >
-                          <PlusCircle className="w-3 h-3" />
-                          {addingToLearn.has(gap.skill) ? 'Adding...' : 'Add to skills'}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                <div className="w-full bg-slate-800 rounded-full h-2 mb-4">
+                  <div
+                    className={'h-2 rounded-full transition-all ' + (coveragePercent >= 70 ? 'bg-emerald-500' : coveragePercent >= 40 ? 'bg-amber-500' : 'bg-red-500')}
+                    style={{width: coveragePercent + '%'}}
+                  />
                 </div>
-              </div>
-            )}
-
-            {/* Covered skills */}
-            {covered.length > 0 && (
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-2 p-5 border-b border-slate-700/50">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-white font-medium">Already in your portfolio ({covered.length})</h3>
-                </div>
-                <div className="p-4 flex flex-wrap gap-2">
-                  {covered.map(c => (
-                    <span key={c.skill}
-                      className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-300 text-xs capitalize flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      {c.skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* CTA */}
-            {gaps.length > 0 && (
-              <div className="flex items-center justify-between p-5 bg-violet-500/10 border border-violet-500/20 rounded-2xl">
-                <div className="flex items-center gap-3">
-                  <BookOpen className="w-5 h-5 text-violet-400" />
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className="text-white text-sm font-medium">Ready to train on these gaps?</div>
-                    <div className="text-slate-400 text-xs mt-0.5">Added skills will appear in your RCT training queue</div>
+                    <p className="text-xl font-bold text-white">{results.length}</p>
+                    <p className="text-xs text-slate-500">Skills detected</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-emerald-400">{matched.length}</p>
+                    <p className="text-xs text-slate-500">In portfolio</p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-red-400">{gaps.length}</p>
+                    <p className="text-xs text-slate-500">Gaps to fill</p>
                   </div>
                 </div>
-                <Link to="/learn"
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-white text-sm font-medium transition-all">
-                  Go to Learn →
-                </Link>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Gaps — each links to Learn */}
+              {gaps.length > 0 && (
+                <div className="bg-slate-900/50 border border-red-500/20 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    Gaps ({gaps.length})
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-4">
+                    These skills are in the JD but not in your portfolio. Click Train to open the RCT engine for that skill.
+                  </p>
+                  <div className="space-y-2">
+                    {gaps.map(gap => (
+                      <div key={gap.skill} className="flex items-center justify-between p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                          <span className="text-sm font-medium text-white">{gap.skill}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {addedToQueue.has(gap.skill) ? (
+                            <span className="text-xs text-emerald-400 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> Added to queue
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => addGapToLearnQueue(gap.skill)}
+                              className="text-xs flex items-center gap-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                            >
+                              <Plus className="w-3 h-3" /> Queue
+                            </button>
+                          )}
+                          <Link
+                            to={'/learn?node=' + encodeURIComponent(gap.skill)}
+                            className="text-xs flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded transition-colors font-medium"
+                          >
+                            <Brain className="w-3 h-3" /> Train
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Matched — each links to Learn */}
+              {matched.length > 0 && (
+                <div className="bg-slate-900/50 border border-emerald-500/20 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                    In Portfolio ({matched.length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {matched.map(m => (
+                      <Link
+                        key={m.skill}
+                        to={'/learn?node=' + encodeURIComponent(m.skill)}
+                        title={'Review training: ' + m.skill}
+                        className={'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:ring-2 hover:ring-white/10 ' + (LEVEL_COLORS[m.portfolioLevel || ''] || 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20')}
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                        {m.skill}
+                        {m.portfolioLevel && <span className="opacity-60">({m.portfolioLevel})</span>}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </AppShell>
   );
-  }
+}
