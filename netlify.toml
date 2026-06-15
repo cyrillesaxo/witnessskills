@@ -7,7 +7,7 @@ NODE_OPTIONS = "--max-old-space-size=4096"
 NPM_FLAGS = "--prefer-offline"
 
 [build]
-command = "npm run build"
+command = "npm run build:netlify"
 publish = "dist"
 
 [functions]

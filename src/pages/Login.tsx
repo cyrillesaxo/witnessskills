@@ -1,17 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import BackgroundGlow from '../components/ui/BackgroundGlow';
 import { Zap, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-
-function BackgroundGlow() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-teal-500/5 to-cyan-500/5 rounded-full blur-3xl" />
-    </div>
-  );
-}
 
 const PAGE_BG = 'min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden';
 const CARD_CLS = 'backdrop-blur-xl bg-slate-800/40 rounded-2xl shadow-2xl border border-slate-700/60 p-8';
@@ -19,6 +11,7 @@ const INPUT_CLS = 'w-full px-4 py-3 bg-slate-900/50 border border-slate-600/60 r
 const LABEL_CLS = 'block text-sm font-medium text-slate-300 mb-2';
 
 export default function Login() {
+  useDocumentTitle('Sign in');
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +24,10 @@ export default function Login() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (isSignUp && password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
     setLoading(true);
     try {
       if (isSignUp) {
@@ -39,8 +36,8 @@ export default function Login() {
         await signIn(email, password);
       }
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setLoading(false);
     }

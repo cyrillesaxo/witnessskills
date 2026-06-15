@@ -2,20 +2,26 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-    plugins: [react()],
-        server: {
+  plugins: [react()],
+  server: {
     port: 5173,
-          strictPort: true,
+    strictPort: true,
+    proxy: {
+      '/.netlify/functions': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
       },
-        optimizeDeps: {
+    },
+  },
+  optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
-      },
-        build: {
+  },
+  build: {
     target: 'esnext',
-          minify: 'esbuild',
-          cssCodeSplit: true,
-          chunkSizeWarningLimit: 600,
-          rollupOptions: {
+    minify: 'esbuild',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
@@ -30,5 +36,5 @@ export default defineConfig({
         },
       },
     },
-        },
-    });
+  },
+});
