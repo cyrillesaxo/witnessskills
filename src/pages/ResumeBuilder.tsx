@@ -1,214 +1,318 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FileText, Copy, Download, Printer, Brain, ExternalLink, AlertCircle, Plus, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Brain, FileText, Copy, Download, Printer, Loader2,
+  AlertCircle, ExternalLink, CheckCircle2,
+} from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { supabase } from '../lib/supabase';
 import AppShell from '../components/ui/AppShell';
-import BackgroundGlow from '../components/ui/BackgroundGlow';
+import OntologyGraphModal from '../components/ui/OntologyGraphModal';
+import { supabase } from '../lib/supabase';
+
+const LEVEL_COLORS: Record<string, string> = {
+  beginner: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+  intermediate: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+  advanced: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+  expert: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+};
 
 interface Skill {
-  id: string; name: string; level: string; domain?: string;
-  evidence?: string; tags?: string[]; rct_node_id?: string;
+  id: string;
+  name: string;
+  level: string;
+  domain: string | null;
+  evidence: string | null;
+  tags: string[] | null;
 }
-type ResumeVersion = 'A' | 'B';
-
-const VERSION_INFO = {
-  A: { label: 'Version A — ATS/Boards', desc: 'LinkedIn Easy Apply, Workday, Greenhouse, Lever, Indeed, Dice' },
-  B: { label: 'Version B — Human Outreach', desc: 'LinkedIn DM, recruiter email, hiring manager, referral intro' },
-};
-const LEVEL_ORDER: Record<string, number> = { expert: 4, advanced: 3, intermediate: 2, beginner: 1 };
-const LEVEL_COLORS: Record<string, string> = {
-  expert: 'text-amber-400 bg-amber-500/10 border border-amber-500/20',
-  advanced: 'text-purple-400 bg-purple-500/10 border border-purple-500/20',
-  intermediate: 'text-teal-400 bg-teal-500/10 border border-teal-500/20',
-  beginner: 'text-blue-400 bg-blue-500/10 border border-blue-500/20',
-};
 
 export default function ResumeBuilder() {
   useDocumentTitle('Resume Builder');
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [version, setVersion] = useState<ResumeVersion>('A');
   const [copied, setCopied] = useState(false);
+  const [graphSkill, setGraphSkill] = useState<{ name: string; level: string } | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { if (!user) return; loadSkills(); }, [user]);
+  useEffect(() => {
+    if (!user) { navigate('/login'); return; }
+    loadSkills();
+  }, [user, navigate]);
 
   async function loadSkills() {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true); setError(null);
       const { data, error: err } = await supabase
-        .from('skills').select('id, name, level, domain, evidence, tags, rct_node_id')
-        .eq('user_id', user!.id).order('level', { ascending: false });
-      if (err) throw new Error(err.message);
-      setSkills(data || []);
-    } catch (err) { setError(err instanceof Error ? err.message : String(err)); }
-    finally { setLoading(false); }
+        .from('skills')
+        .select('id, name, level, domain, evidence, tags')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false });
+      if (err) throw err;
+      setSkills((data ?? []) as Skill[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function buildResumeText(): string {
-    if (!skills.length) return '';
-    const sorted = [...skills].sort((a, b) => (LEVEL_ORDER[b.level] || 0) - (LEVEL_ORDER[a.level] || 0));
+  function buildResumeText() {
+    const lines: string[] = [
+      'SKILLS PORTFOLIO',
+      '================',
+      '',
+      'CORE TECHNICAL SKILLS',
+      '─────────────────────',
+      skills.map(s => s.name + ' (' + s.level + ')').join(' | '),
+      '',
+    ];
     const byDomain: Record<string, Skill[]> = {};
-    for (const s of sorted) { const k = s.domain || 'General'; byDomain[k] = byDomain[k] || []; byDomain[k].push(s); }
-    const header = version === 'A' ? 'TECHNICAL SKILLS PORTFOLIO\n' + '='.repeat(40) + '\n' : 'EXPERTISE OVERVIEW\n' + '-'.repeat(40) + '\n';
-    const sections = Object.entries(byDomain).map(([d, ds]) => d + ':\n  ' + ds.map(s => s.name + ' (' + s.level + ')').join(' | ')).join('\n\n');
-    const ev = sorted.filter(s => s.evidence).slice(0, 6).map(s => '• ' + s.name + ' (' + s.level + '):\n  ' + s.evidence).join('\n\n');
-    return header + sections + (ev ? '\n\nSELECTED EVIDENCE\n' + '='.repeat(40) + '\n' + ev : '');
+    skills.forEach(s => {
+      const d = s.domain ?? 'General';
+      if (!byDomain[d]) byDomain[d] = [];
+      byDomain[d].push(s);
+    });
+    Object.entries(byDomain).forEach(([domain, list]) => {
+      lines.push(domain.toUpperCase());
+      lines.push('─'.repeat(domain.length));
+      list.forEach(s => {
+        lines.push('• ' + s.name + ' [' + s.level + ']');
+        if (s.evidence) lines.push('  Evidence: ' + s.evidence);
+        if (s.tags?.length) lines.push('  Tags: ' + s.tags.join(', '));
+      });
+      lines.push('');
+    });
+    return lines.join('\n');
   }
 
   function handleCopy() {
-    const t = buildResumeText(); if (!t) return;
-    navigator.clipboard.writeText(t).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    const text = buildResumeText();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   function handleDownloadTxt() {
-    const t = buildResumeText(); if (!t) return;
+    const text = buildResumeText();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([t], { type: 'text/plain' }));
-    a.download = 'resume_v' + version + '_' + new Date().toISOString().split('T')[0] + '.txt';
+    a.href = url;
+    a.download = 'skills-resume.txt';
     a.click();
+    URL.revokeObjectURL(url);
   }
 
   function handlePrintPDF() {
-    // Inject @media print styles, trigger browser Save as PDF
     const style = document.createElement('style');
-    style.id = 'resume-print-style';
-    style.textContent = '@media print { body > * { display: none !important; } #resume-print-area { display: block !important; position: fixed; top: 0; left: 0; width: 100%; color: #000 !important; background: #fff !important; padding: 20pt; font-family: serif; } #resume-print-area h1 { font-size: 22pt; font-weight: bold; margin-bottom: 4pt; } #resume-print-area h2 { font-size: 14pt; font-weight: bold; margin: 12pt 0 4pt; border-bottom: 1pt solid #ccc; } #resume-print-area .sc { display: inline-block; margin: 2pt; padding: 2pt 6pt; border: 1pt solid #999; border-radius: 4pt; font-size: 10pt; } #resume-print-area .ev { margin: 6pt 0; font-size: 10pt; } #resume-print-area .evn { font-weight: bold; } }';
+    style.id = 'print-override';
+    style.textContent = `
+      @media print {
+        body > *:not(#resume-print-area) { display: none !important; }
+        #resume-print-area { display: block !important; position: fixed; top: 0; left: 0; width: 100%; background: white; color: black; padding: 2rem; font-family: Georgia, serif; }
+      }
+    `;
     document.head.appendChild(style);
+    const printEl = document.getElementById('resume-print-area');
+    if (printEl) printEl.style.display = 'block';
     window.print();
-    setTimeout(() => { const s = document.getElementById('resume-print-style'); if (s) s.remove(); }, 1000);
+    setTimeout(() => {
+      style.remove();
+      if (printEl) printEl.style.display = 'none';
+    }, 500);
   }
 
-  const sorted = [...skills].sort((a, b) => (LEVEL_ORDER[b.level] || 0) - (LEVEL_ORDER[a.level] || 0));
+  const handleSignOut = async () => { await signOut(); navigate('/login'); };
+  if (!user) return null;
+
+  const withEvidence = skills.filter(s => s.evidence);
   const byDomain: Record<string, Skill[]> = {};
-  for (const s of sorted) { const k = s.domain || 'General'; byDomain[k] = byDomain[k] || []; byDomain[k].push(s); }
+  skills.forEach(s => {
+    const d = s.domain ?? 'General';
+    if (!byDomain[d]) byDomain[d] = [];
+    byDomain[d].push(s);
+  });
 
   return (
-    <AppShell>
-      {skills.length > 0 && (
-        <div id="resume-print-area" style={{display: 'none'}} aria-hidden="true">
-          <h1>{version === 'A' ? 'Technical Skills Portfolio' : 'Expertise Overview'}</h1>
-          {Object.entries(byDomain).map(([d, ds]) => (
-            <div key={d}><h2>{d}</h2>{ds.map(s => <span key={s.id} className="sc">{s.name} ({s.level})</span>)}</div>
-          ))}
-          {sorted.filter(s => s.evidence).length > 0 && (
-            <div><h2>Selected Evidence</h2>
-              {sorted.filter(s => s.evidence).slice(0, 6).map(s => (
-                <div key={s.id} className="ev"><span className="evn">{s.name} ({s.level}):</span><div>{s.evidence}</div></div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-        <BackgroundGlow />
-        <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 sm:py-8 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-                <FileText className="w-7 h-7 text-emerald-400" aria-hidden="true" />Resume Builder
-              </h1>
-              <p className="text-slate-400 mt-1 text-sm">Generated from your portfolio. Click any skill to open its training node.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={handleCopy} disabled={!skills.length} aria-label="Copy resume to clipboard"
-                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white rounded-lg text-sm">
-                {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" aria-hidden="true" /> : <Copy className="w-4 h-4" aria-hidden="true" />}
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-              <button onClick={handleDownloadTxt} disabled={!skills.length} aria-label="Download as .txt"
-                className="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white rounded-lg text-sm">
-                <Download className="w-4 h-4" aria-hidden="true" />.txt
-              </button>
-              <button onClick={handlePrintPDF} disabled={!skills.length} aria-label="Save resume as PDF via browser print"
-                className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white rounded-lg text-sm font-medium">
-                <Printer className="w-4 h-4" aria-hidden="true" />Save as PDF
-              </button>
-            </div>
+    <>
+      <AppShell
+        trail={[{ label: 'Dashboard', href: '/' }, { label: 'Apply', href: '/apply' }, { label: 'Resume Builder' }]}
+        onSignOut={handleSignOut}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={handleCopy} aria-label="Copy resume text"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-lg hover:bg-slate-700 transition-colors">
+              {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+            <button onClick={handleDownloadTxt} aria-label="Download as .txt"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-lg hover:bg-slate-700 transition-colors">
+              <Download className="w-3.5 h-3.5" />
+              .txt
+            </button>
+            <button onClick={handlePrintPDF} aria-label="Save as PDF via print dialog"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-emerald-500/30 border border-emerald-500/50 rounded-lg hover:bg-emerald-500/40 transition-colors">
+              <Printer className="w-3.5 h-3.5" />
+              Save as PDF
+            </button>
           </div>
-          <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
-            <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">Resume Version</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Resume version">
-              {(['A', 'B'] as ResumeVersion[]).map(v => (
-                <button key={v} onClick={() => setVersion(v)} role="radio" aria-checked={version === v}
-                  className={'text-left p-4 rounded-lg border transition-all ' + (version === v ? 'border-emerald-500/50 bg-emerald-500/10' : 'border-slate-700/50 bg-slate-800/50 hover:border-slate-600')}>
-                  <p className={'font-semibold text-sm ' + (version === v ? 'text-emerald-300' : 'text-white')}>{VERSION_INFO[v].label}</p>
-                  <p className="text-xs text-slate-500 mt-1">{VERSION_INFO[v].desc}</p>
-                </button>
-              ))}
-            </div>
+        }
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
+
+          {/* Stats bar */}
+          <div className="flex items-center gap-4 mb-6 text-xs text-slate-500 flex-wrap">
+            <span>Skills tracked: <strong className="text-slate-300">{skills.length}</strong></span>
+            <span>With evidence: <strong className="text-slate-300">{withEvidence.length}</strong></span>
+            <span>Domains: <strong className="text-slate-300">{Object.keys(byDomain).length}</strong></span>
           </div>
+
+          {/* Error */}
           {error && (
-            <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />{error}
-              <button onClick={loadSkills} className="ml-auto underline text-xs">Retry</button>
+            <div className="flex items-center gap-2 p-4 mb-6 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
             </div>
           )}
-          {loading ? (
-            <div aria-busy="true" aria-label="Loading skills" className="space-y-4">
-              {[1,2,3].map(i => <div key={i} className="h-32 bg-slate-900/50 rounded-xl animate-pulse" />)}
+
+          {/* Loading */}
+          {loading && (
+            <div className="flex items-center justify-center py-20" role="status" aria-live="polite">
+              <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
             </div>
-          ) : !skills.length ? (
-            <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-8 sm:p-12 text-center">
-              <Brain className="w-12 h-12 text-slate-700 mx-auto mb-4" aria-hidden="true" />
-              <h3 className="text-xl font-semibold text-white mb-2">No skills in portfolio yet</h3>
-              <p className="text-slate-400 mb-6 max-w-md mx-auto text-sm">Add skills first — your resume generates from them automatically.</p>
-              <Link to="/skills" className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm">
-                <Plus className="w-4 h-4" aria-hidden="true" />Add Skills
+          )}
+
+          {/* Empty state */}
+          {!loading && !error && skills.length === 0 && (
+            <div className="text-center py-20">
+              <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <h3 className="text-slate-300 font-semibold mb-1">No skills to show</h3>
+              <p className="text-slate-500 text-sm mb-5">Add skills to your portfolio first, then build your resume.</p>
+              <Link to="/skills"
+                className="px-5 py-2.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-sm font-semibold hover:bg-emerald-500/30 transition-colors">
+                Go to Skills Portfolio
               </Link>
             </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="grid grid-cols-3 gap-3">
-                {[{label:'Skills', value: skills.length},{label:'Evidence', value: skills.filter(s=>s.evidence&&s.evidence.length>0).length},{label:'RCT done', value: skills.filter(s=>s.rct_node_id).length}].map(stat => (
-                  <div key={stat.label} className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 sm:p-4 text-center">
-                    <p className="text-xl sm:text-2xl font-bold text-white">{stat.value}</p>
-                    <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-              {Object.entries(byDomain).map(([domain, ds]) => (
-                <div key={domain} className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 sm:p-6">
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-emerald-400" aria-hidden="true" />{domain}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {ds.map(skill => (
-                      <Link key={skill.id} to={'/learn?node=' + encodeURIComponent(skill.name)}
-                        aria-label={'Open ' + skill.name + ' training in RCT engine (' + skill.level + ')'}
-                        className={'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:ring-2 hover:ring-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500 ' + (LEVEL_COLORS[skill.level] || 'text-slate-400 bg-slate-800 border border-slate-700')}>
-                        {skill.name}<ExternalLink className="w-3 h-3 opacity-50" aria-hidden="true" />
+          )}
+
+          {/* Resume preview */}
+          {!loading && skills.length > 0 && (
+            <div className="space-y-6" ref={printRef} id="resume-content">
+
+              {/* Core skills section */}
+              <section className="p-5 bg-slate-800/40 border border-slate-700/40 rounded-2xl">
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+                  Core Technical Skills
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {skills.map(skill => (
+                    <div key={skill.id} className="flex items-center gap-1">
+                      <Link
+                        to={'/learn?node=' + encodeURIComponent(skill.name)}
+                        title={'Train ' + skill.name + ' in RCT graph'}
+                        aria-label={'Train ' + skill.name + ' in RCT learning graph'}
+                        className={'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium transition-all hover:scale-105 ' + (LEVEL_COLORS[skill.level] ?? LEVEL_COLORS.intermediate)}
+                      >
+                        {skill.name}
+                        <ExternalLink className="w-3 h-3 opacity-50" aria-hidden="true" />
                       </Link>
-                    ))}
-                  </div>
-                  <p className="text-xs text-slate-600 mt-3">Click any skill to open its training node</p>
+                      {/* Brain icon → opens OntologyGraphModal */}
+                      <button
+                        onClick={() => setGraphSkill({ name: skill.name, level: skill.level })}
+                        title={'Open RCT ontology graph for ' + skill.name}
+                        aria-label={'Open RCT ontology graph for ' + skill.name}
+                        className="p-1 rounded-full text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 transition-colors opacity-50 hover:opacity-100"
+                      >
+                        <Brain className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {skills.filter(s => s.evidence && s.evidence.length > 0).length > 0 && (
-                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 sm:p-6">
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Evidence Highlights</h3>
+              </section>
+
+              {/* By-domain sections */}
+              {Object.entries(byDomain).map(([domain, list]) => (
+                <section key={domain} className="p-5 bg-slate-800/30 border border-slate-700/30 rounded-2xl">
+                  <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">{domain}</h2>
                   <div className="space-y-3">
-                    {skills.filter(s => s.evidence && s.evidence.length > 0).slice(0, 6).map(skill => (
-                      <div key={skill.id} className="flex flex-col sm:flex-row sm:gap-3">
-                        <Link to={'/learn?node=' + encodeURIComponent(skill.name)}
-                          aria-label={'Open ' + skill.name + ' training'}
-                          className="text-sm font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 sm:whitespace-nowrap focus:outline-none focus:underline">
-                          {skill.name}<ExternalLink className="w-3 h-3" aria-hidden="true" />
-                        </Link>
-                        <span className={'text-xs px-2 py-0.5 rounded-full self-start ' + (LEVEL_COLORS[skill.level] || '')}>{skill.level}</span>
-                        <p className="text-sm text-slate-400 flex-1 mt-1 sm:mt-0">{skill.evidence}</p>
+                    {list.map(skill => (
+                      <div key={skill.id} className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link
+                              to={'/learn?node=' + encodeURIComponent(skill.name)}
+                              aria-label={'Open ' + skill.name + ' in RCT graph'}
+                              className="font-semibold text-sm text-slate-200 hover:text-emerald-400 transition-colors flex items-center gap-1"
+                            >
+                              {skill.name}
+                              <ExternalLink className="w-3 h-3 opacity-40" aria-hidden="true" />
+                            </Link>
+                            <span className={'text-xs px-1.5 py-0.5 rounded-full border ' + (LEVEL_COLORS[skill.level] ?? LEVEL_COLORS.intermediate)}>
+                              {skill.level}
+                            </span>
+                            {/* Brain icon */}
+                            <button
+                              onClick={() => setGraphSkill({ name: skill.name, level: skill.level })}
+                              title={'Open RCT ontology graph for ' + skill.name}
+                              aria-label={'Open RCT ontology for ' + skill.name}
+                              className="p-0.5 text-violet-400 hover:text-violet-300 opacity-50 hover:opacity-100 transition-opacity"
+                            >
+                              <Brain className="w-3 h-3" />
+                            </button>
+                          </div>
+                          {skill.evidence && (
+                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{skill.evidence}</p>
+                          )}
+                          {skill.tags && skill.tags.length > 0 && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {skill.tags.map(tag => (
+                                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-500">{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                </section>
+              ))}
             </div>
           )}
         </div>
+      </AppShell>
+
+      {/* Hidden print area */}
+      <div id="resume-print-area" style={{ display: 'none' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>Skills Portfolio</h1>
+        <h2 style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>Core Technical Skills</h2>
+        <p>{skills.map(s => s.name + ' (' + s.level + ')').join(' | ')}</p>
+        <hr style={{ margin: '16px 0' }} />
+        {Object.entries(byDomain).map(([domain, list]) => (
+          <div key={domain} style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 6 }}>{domain}</h3>
+            {list.map(s => (
+              <div key={s.id} style={{ marginBottom: 6 }}>
+                <strong>{s.name}</strong> [{s.level}]
+                {s.evidence && <div style={{ color: '#555', fontSize: 11 }}>{s.evidence}</div>}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
-    </AppShell>
+
+      {/* RCT Ontology Graph Modal */}
+      {graphSkill && (
+        <OntologyGraphModal
+          skillName={graphSkill.name}
+          skillLevel={graphSkill.level}
+          onClose={() => setGraphSkill(null)}
+        />
+      )}
+    </>
   );
 }
