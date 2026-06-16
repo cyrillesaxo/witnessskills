@@ -139,9 +139,8 @@ export default function Learn() {
     navigate('/login');
   };
 
+  useDocumentTitle(tab === 'learn' ? 'Learn' : tab === 'audit' ? 'Audit' : 'Generate');
   if (!user) return null;
-
-  useDocumentTitle('Learn · WitnessSkills');
 
   const tabSwitcher = (
     <div className="flex items-center gap-1 p-1 bg-slate-800/40 border border-slate-700/40 rounded-xl">
