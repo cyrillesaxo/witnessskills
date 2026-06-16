@@ -39,6 +39,7 @@ export default function Skills() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
@@ -101,6 +102,32 @@ export default function Skills() {
       setTimeout(() => { setShowAdd(false); setSaveOk(false); }, 1200);
     } catch (e) {
       setSaveErr(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleEditSkill(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingSkill || !form.name.trim()) return;
+    setSaving(true);
+    setSaveErr(null);
+    setSaveOk(false);
+    try {
+      const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
+      const { error: err } = await supabase.from('skills').update({
+        name: form.name.trim(),
+        level: form.level as Level,
+        domain: form.domain.trim() || null,
+        evidence: form.evidence.trim() || null,
+        tags: tags.length ? tags : null,
+      }).eq('id', editingSkill.id).eq('user_id', user!.id);
+      if (err) throw err;
+      setSaveOk(true);
+      await loadSkills();
+      setTimeout(() => { setEditingSkill(null); setSaveOk(false); }, 900);
+    } catch (err: unknown) {
+      setSaveErr(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -214,6 +241,24 @@ export default function Skills() {
                         <ExternalLink className="w-4 h-4" />
                       </Link>
 
+                      {/* Edit */}
+                      <button
+                        onClick={() => {
+                          setEditingSkill(skill);
+                          setForm({
+                            name: skill.name,
+                            level: skill.level,
+                            domain: skill.domain || '',
+                            evidence: skill.evidence || '',
+                            tags: (skill.tags || []).join(', '),
+                          });
+                        }}
+                        title={'Edit ' + skill.name}
+                        aria-label={'Edit ' + skill.name}
+                        className="p-1.5 rounded text-slate-400 hover:text-blue-400 hover:bg-blue-900/20 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
                       {/* Delete */}
                       <button
                         onClick={() => handleDeleteSkill(skill.id)}
@@ -251,7 +296,96 @@ export default function Skills() {
             </div>
           )}
         </div>
-      </AppShell>
+      
+      {/* Edit Skill Modal */}
+      {editingSkill && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-700">
+              <h2 className="text-sm font-semibold text-white">Edit Skill</h2>
+              <button
+                type="button"
+                onClick={() => setEditingSkill(null)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <form onSubmit={handleEditSkill} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Skill name *</label>
+                <input
+                  required
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. React"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Level</label>
+                <select
+                  value={form.level}
+                  onChange={e => setForm(f => ({ ...f, level: e.target.value as Level }))}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="expert">Expert</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Domain (optional)</label>
+                <input
+                  value={form.domain}
+                  onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. Frontend"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Evidence (optional)</label>
+                <textarea
+                  value={form.evidence}
+                  onChange={e => setForm(f => ({ ...f, evidence: e.target.value }))}
+                  rows={3}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
+                  placeholder="Describe how you used this skill..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Tags (comma-separated, optional)</label>
+                <input
+                  value={form.tags}
+                  onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. frontend, react, hooks"
+                />
+              </div>
+              {saveErr && <p className="text-xs text-red-400">{saveErr}</p>}
+              {saveOk && <p className="text-xs text-emerald-400">Saved!</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setEditingSkill(null)}
+                  className="flex-1 px-4 py-2 text-sm text-slate-400 border border-slate-700/50 rounded-xl hover:bg-slate-700/30 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl transition-colors"
+                >
+                  {saving ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+</AppShell>
 
       {/* Add skill modal */}
       {showAdd && (
