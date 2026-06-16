@@ -30,23 +30,35 @@ function parseTab(value: string | null): Tab | null {
   return null;
 }
 
-const LS_KEY = 'ws_custom_domains';
+// Stored as { key, domain } pairs so we preserve the gen: key alongside the domain
+interface StoredTraining {
+  key: string;
+  raw: Parameters<typeof hydrateGenerated>[0];
+}
 
-function loadCustomDomains(): Domain[] {
+const LS_KEY = 'ws_custom_trainings_v2';
+
+function loadCustomTrainings(): Array<{ key: string; domain: Domain }> {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown[];
-    return parsed.map((r) => hydrateGenerated(r as Parameters<typeof hydrateGenerated>[0]));
+    const parsed = JSON.parse(raw) as StoredTraining[];
+    return parsed.map(({ key, raw: r }) => ({ key, domain: hydrateGenerated(r) }));
   } catch {
     return [];
   }
 }
 
-function saveCustomDomains(domains: Domain[]): void {
+function saveCustomTrainings(trainings: Array<{ key: string; domain: Domain }>): void {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(domains));
-  } catch { /* storage full or unavailable */ }
+    localStorage.setItem(LS_KEY, JSON.stringify(trainings.map(({ key, domain: d }) => ({
+      key,
+      raw: { name: d.name, root: d.root, helloPom: d.helloPom ?? null, nodes: d.nodes.map(n => ({
+        id: n.id, label: n.label, description: n.description, tier: n.tier,
+        keywords: n.keywords, negativeKeywords: n.negativeKeywords, prerequisites: n.prerequisites,
+      })) },
+    }))));
+  } catch { /* storage full */ }
 }
 
 export default function Learn() {
@@ -56,17 +68,21 @@ export default function Learn() {
   const [tab, setTab] = useState<Tab>(() => parseTab(searchParams.get('tab')) ?? 'learn');
 
   const [domainKey, setDomainKey] = useState('maven');
-  const [customDomains, setCustomDomains] = useState<Domain[]>(() => loadCustomDomains());
+  const [customTrainings, setCustomTrainings] = useState<Array<{ key: string; domain: Domain }>>(
+    () => loadCustomTrainings()
+  );
 
-  // Build full domain map: built-ins + custom
+  // Merge built-in and custom domains by key
   const allDomains: Record<string, Domain> = {
-    ...DOMAINS,
-    ...Object.fromEntries(customDomains.map(d => [d.root, d])),
+    ...Object.fromEntries(Object.entries(DOMAINS)),
+    ...Object.fromEntries(customTrainings.map(({ key, domain }) => [key, domain])),
   };
   const domain: Domain = allDomains[domainKey] ?? DOMAINS.maven;
 
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [generatePrompt, setGeneratePrompt] = useState('');
+
+  useDocumentTitle(tab === 'learn' ? 'Learn' : tab === 'audit' ? 'Audit' : 'Generate');
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -99,29 +115,24 @@ export default function Learn() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const loadDomain = useCallback((_dom: Domain, key: string) => {
-    setDomainKey(key);
-    switchTab('learn');
-  }, [switchTab]);
-
+  // Called when GeneratorPanel creates a new training
   const handleNewDomain = useCallback((dom: Domain, key: string) => {
-    // Persist generated domain to localStorage and make it selectable
-    setCustomDomains(prev => {
-      const updated = [...prev.filter(d => d.root !== dom.root), dom];
-      saveCustomDomains(updated);
+    setCustomTrainings(prev => {
+      const updated = [...prev.filter(t => t.key !== key), { key, domain: dom }];
+      saveCustomTrainings(updated);
       return updated;
     });
     setDomainKey(key);
     switchTab('learn');
   }, [switchTab]);
 
-  const removeCustomDomain = useCallback((root: string) => {
-    setCustomDomains(prev => {
-      const updated = prev.filter(d => d.root !== root);
-      saveCustomDomains(updated);
+  const removeCustomTraining = useCallback((key: string) => {
+    setCustomTrainings(prev => {
+      const updated = prev.filter(t => t.key !== key);
+      saveCustomTrainings(updated);
       return updated;
     });
-    setDomainKey(prev => (prev === root ? 'maven' : prev));
+    setDomainKey(prev => (prev === key ? 'maven' : prev));
   }, []);
 
   const handleTrainNode = useCallback((nodeId: string) => {
@@ -139,7 +150,6 @@ export default function Learn() {
     navigate('/login');
   };
 
-  useDocumentTitle(tab === 'learn' ? 'Learn' : tab === 'audit' ? 'Audit' : 'Generate');
   if (!user) return null;
 
   const tabSwitcher = (
@@ -155,14 +165,14 @@ export default function Learn() {
     </div>
   );
 
-  // Training selector: built-in + custom trainings + New button
+  // Build list of all selectable trainings
   const allTrainings = [
     ...Object.entries(DOMAINS).map(([k, d]) => ({ key: k, name: d.name, custom: false })),
-    ...customDomains.map(d => ({ key: d.root, name: d.name, custom: true })),
+    ...customTrainings.map(({ key, domain: d }) => ({ key, name: d.name, custom: true })),
   ];
 
   const trainingSwitcher = (
-    <div className="flex flex-wrap items-center gap-1.5 mt-2 mb-4">
+    <div className="flex flex-wrap items-center gap-1.5 mb-4">
       {allTrainings.map(({ key, name, custom }) => (
         <span key={key}
           className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors $\{
@@ -170,13 +180,13 @@ export default function Learn() {
               ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
               : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:border-slate-500/50'
           }`}
-          onClick={() => setDomainKey(key)}
+          onClick={() => { setDomainKey(key); switchTab('learn'); }}
         >
           {name}
           {custom && (
             <button
               className="ml-0.5 text-slate-500 hover:text-red-400 transition-colors"
-              onClick={(e) => { e.stopPropagation(); removeCustomDomain(key); }}
+              onClick={(e) => { e.stopPropagation(); removeCustomTraining(key); }}
               title="Remove training"
             >
               <X className="w-3 h-3" />
