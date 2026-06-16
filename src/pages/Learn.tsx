@@ -35,8 +35,8 @@ export default function Learn() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => parseTab(searchParams.get('tab')) ?? 'learn');
   useDocumentTitle(tab === 'learn' ? 'Learn' : tab === 'audit' ? 'Audit' : 'Generate');
-  const [domain, setDomain] = useState<Domain>(DOMAINS.maven);
   const [domainKey, setDomainKey] = useState('maven');
+  const domain: Domain = (DOMAINS as Record<string, Domain>)[domainKey] ?? DOMAINS.maven;
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [generatePrompt, setGeneratePrompt] = useState('');
 
@@ -71,8 +71,7 @@ export default function Learn() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const loadDomain = useCallback((dom: Domain, key: string) => {
-    setDomain(dom);
+  const loadDomain = useCallback((_dom: Domain, key: string) => {
     setDomainKey(key);
     switchTab('learn');
   }, [switchTab]);
