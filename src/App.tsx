@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Apply from './pages/Apply';
 import ResumeBuilder from './pages/ResumeBuilder';
 import GapAnalyzer from './pages/GapAnalyzer';
+import Challenge from './pages/Challenge';
 
 const isSupabaseConfigured = !!(
   import.meta.env.VITE_SUPABASE_URL &&
@@ -55,7 +56,8 @@ function AppRoutes() {
       <Route path="/apply/resume" element={user ? <ResumeBuilder /> : <Navigate to="/login" replace />} />
       <Route path="/apply/gaps" element={user ? <GapAnalyzer /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          <Route path="/challenge" element={user ? <Challenge /> : <Navigate to="/login" replace />} />
+      </Routes>
   );
 }
 
