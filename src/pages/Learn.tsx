@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Brain, BarChart3, Sparkles } from 'lucide-react';
+import { Brain, BarChart3, Sparkles, Plus, X } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
@@ -8,6 +8,7 @@ import LearningTool from '../components/learn/LearningTool';
 import CoverageAuditor from '../components/audit/CoverageAuditor';
 import GeneratorPanel from '../components/learn/GeneratorPanel';
 import { DOMAINS } from '../lib/rct/mavenOntology';
+import { hydrateGenerated } from '../lib/rct/domainGenerator';
 import type { Domain } from '../lib/rct/types';
 
 type Tab = 'learn' | 'audit' | 'generate';
@@ -19,9 +20,9 @@ const TABS: { id: Tab; label: string; icon: typeof Brain }[] = [
 ];
 
 const TAB_STYLES: Record<Tab, string> = {
-  learn: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  audit: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30',
-  generate: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  learn: 'text-emerald-400 border-b-2 border-emerald-400',
+  audit: 'text-violet-400 border-b-2 border-violet-400',
+  generate: 'text-amber-400 border-b-2 border-amber-400',
 };
 
 function parseTab(value: string | null): Tab | null {
@@ -29,14 +30,41 @@ function parseTab(value: string | null): Tab | null {
   return null;
 }
 
+const LS_KEY = 'ws_custom_domains';
+
+function loadCustomDomains(): Domain[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown[];
+    return parsed.map((r) => hydrateGenerated(r as Parameters<typeof hydrateGenerated>[0]));
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomDomains(domains: Domain[]): void {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(domains));
+  } catch { /* storage full or unavailable */ }
+}
+
 export default function Learn() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(() => parseTab(searchParams.get('tab')) ?? 'learn');
-  useDocumentTitle(tab === 'learn' ? 'Learn' : tab === 'audit' ? 'Audit' : 'Generate');
+
   const [domainKey, setDomainKey] = useState('maven');
-  const domain: Domain = (DOMAINS as Record<string, Domain>)[domainKey] ?? DOMAINS.maven;
+  const [customDomains, setCustomDomains] = useState<Domain[]>(() => loadCustomDomains());
+
+  // Build full domain map: built-ins + custom
+  const allDomains: Record<string, Domain> = {
+    ...DOMAINS,
+    ...Object.fromEntries(customDomains.map(d => [d.root, d])),
+  };
+  const domain: Domain = allDomains[domainKey] ?? DOMAINS.maven;
+
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [generatePrompt, setGeneratePrompt] = useState('');
 
@@ -59,7 +87,7 @@ export default function Learn() {
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount deep links once
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount only
 
   const switchTab = useCallback((id: Tab) => {
     setTab(id);
@@ -76,13 +104,33 @@ export default function Learn() {
     switchTab('learn');
   }, [switchTab]);
 
+  const handleNewDomain = useCallback((dom: Domain, key: string) => {
+    // Persist generated domain to localStorage and make it selectable
+    setCustomDomains(prev => {
+      const updated = [...prev.filter(d => d.root !== dom.root), dom];
+      saveCustomDomains(updated);
+      return updated;
+    });
+    setDomainKey(key);
+    switchTab('learn');
+  }, [switchTab]);
+
+  const removeCustomDomain = useCallback((root: string) => {
+    setCustomDomains(prev => {
+      const updated = prev.filter(d => d.root !== root);
+      saveCustomDomains(updated);
+      return updated;
+    });
+    setDomainKey(prev => (prev === root ? 'maven' : prev));
+  }, []);
+
   const handleTrainNode = useCallback((nodeId: string) => {
     setFocusNodeId(nodeId);
     switchTab('learn');
   }, [switchTab]);
 
-  const handleBuildGap = useCallback((question: string) => {
-    if (question) setGeneratePrompt(question);
+  const handleBuildGap = useCallback((prompt: string) => {
+    setGeneratePrompt(prompt);
     switchTab('generate');
   }, [switchTab]);
 
@@ -93,16 +141,56 @@ export default function Learn() {
 
   if (!user) return null;
 
+  useDocumentTitle('Learn · WitnessSkills');
+
   const tabSwitcher = (
     <div className="flex items-center gap-1 p-1 bg-slate-800/40 border border-slate-700/40 rounded-xl">
       {TABS.map(({ id, label, icon: Icon }) => (
         <button key={id} onClick={() => switchTab(id)}
-          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+          className={`flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg transition-colors $\{
             tab === id ? TAB_STYLES[id] : 'text-slate-400 hover:text-slate-200'
           }`}>
           <Icon className="w-3.5 h-3.5" />{label}
         </button>
       ))}
+    </div>
+  );
+
+  // Training selector: built-in + custom trainings + New button
+  const allTrainings = [
+    ...Object.entries(DOMAINS).map(([k, d]) => ({ key: k, name: d.name, custom: false })),
+    ...customDomains.map(d => ({ key: d.root, name: d.name, custom: true })),
+  ];
+
+  const trainingSwitcher = (
+    <div className="flex flex-wrap items-center gap-1.5 mt-2 mb-4">
+      {allTrainings.map(({ key, name, custom }) => (
+        <span key={key}
+          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors $\{
+            domainKey === key
+              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+              : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:border-slate-500/50'
+          }`}
+          onClick={() => setDomainKey(key)}
+        >
+          {name}
+          {custom && (
+            <button
+              className="ml-0.5 text-slate-500 hover:text-red-400 transition-colors"
+              onClick={(e) => { e.stopPropagation(); removeCustomDomain(key); }}
+              title="Remove training"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </span>
+      ))}
+      <button
+        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-dashed border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-400 transition-colors"
+        onClick={() => switchTab('generate')}
+      >
+        <Plus className="w-3 h-3" /> New training
+      </button>
     </div>
   );
 
@@ -117,7 +205,8 @@ export default function Learn() {
         </span>
       }
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+        {trainingSwitcher}
         {tab === 'learn' && (
           <LearningTool
             key={domainKey}
@@ -139,7 +228,7 @@ export default function Learn() {
           <GeneratorPanel
             current={domain}
             domainKey={domainKey}
-            onLoad={loadDomain}
+            onLoad={handleNewDomain}
             initialPrompt={generatePrompt}
             onPromptConsumed={() => setGeneratePrompt('')}
           />
