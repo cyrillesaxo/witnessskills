@@ -13,7 +13,7 @@ export async function upsertRctEvidence(
   const level = node.levels[levelIndex];
   if (!level) return { ok: true };
 
-  const skillName = `${domainName}: ${node.label} (${level.tier})`;
+  const skillName = node.label;
   const evidence = [
     `RCT convergence cleared at ${level.tier} tier.`,
     `Anchor: ${level.anchor.artifact}`,
@@ -55,7 +55,7 @@ export async function upsertRctEvidence(
 }
 
 function tierToSkillLevel(tier: string): 'beginner' | 'intermediate' | 'advanced' | 'expert' {
-  if (tier === 'Junior') return 'beginner';
+  if (tier === 'Junior') return 'intermediate';
   if (tier === 'Mid') return 'intermediate';
   if (tier === 'Senior') return 'expert';
   return 'advanced';
