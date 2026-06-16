@@ -66,7 +66,7 @@ export default function GapAnalyzer() {
       /\b(Spark|Hadoop|Databricks|Snowflake|dbt|Airflow|ETL|Data Pipeline)\b/gi,
       /\b(Prometheus|Grafana|Datadog|OpenTelemetry|Jaeger|Zipkin)\b/gi,
       /\b(Linux|Unix|Bash|Shell|PowerShell|Windows Server)\b/gi,
-      /\b(Git|SVN|Mercurial|CI|CD|GitOps|ArgoCD|FluxCD)\b/gi,
+      /\b(Git|SVN|Mercurial|CI\/CD|GitOps|ArgoCD|FluxCD)\b/gi,
     ];
 
     const found = new Set<string>();
