@@ -335,8 +335,8 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-4">
             <Brain className="w-3.5 h-3.5" />RCT Epistemic Engine
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Map the unknown onto the known</h2>
-          <p className="text-slate-400 text-sm max-w-2xl leading-relaxed">
+          <h2 className="text-xl font-semibold text-white mb-1">Map the unknown onto the known</h2>
+          <p className="text-slate-400 text-sm max-w-xl leading-snug">
             Every node starts from a <span className="text-emerald-300">concrete artifact you already understand</span>,
             then asks you to converge a new case onto it. Abstraction is the second hint you earn.
             Domain: <span className="text-white font-medium">{domain.name}</span>.
@@ -379,7 +379,7 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 text-xs text-slate-400 mb-4 py-3 border-y border-slate-800/60">
+      <div className="flex flex-wrap gap-4 text-xs text-slate-400 mb-2 py-2 border-y border-slate-800/60">
         {[['Junior', '#7d8aa3'], ['Mid', '#f2a43c'], ['Senior', '#2fd3a5']].map(([t, c]) => (
           <span key={t} className="flex items-center gap-1.5"><i className="w-2 h-2 rounded-full" style={{ background: c }} />{t}</span>
         ))}
