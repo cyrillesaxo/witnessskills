@@ -1,3 +1,4 @@
+import { GIT_DOMAIN, GRADLE_DOMAIN, DOCKER_DOMAIN, NPM_DOMAIN, TS_DOMAIN, SQL_DOMAIN } from './builtinDomains';
 import { hasAny } from './utils';
 import type { Domain, OntologyNode } from './types';
 
@@ -389,4 +390,10 @@ export const MAVEN_NODES: OntologyNode[] = [
 
 export const DOMAINS: Record<string, Domain> = {
   maven: { name: 'Apache Maven', root: 'resolve', nodes: MAVEN_NODES, helloPom: HELLO_POM },
+  git: GIT_DOMAIN,
+  gradle: GRADLE_DOMAIN,
+  docker: DOCKER_DOMAIN,
+  npm: NPM_DOMAIN,
+  typescript: TS_DOMAIN,
+  sql: SQL_DOMAIN,
 };
