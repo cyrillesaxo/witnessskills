@@ -10,6 +10,8 @@ const NAV_LINKS = [
   { to: '/learn', label: 'Learn', icon: BookOpen },
   { to: '/skills', label: 'Skills', icon: Star },
   { to: '/apply', label: 'Apply', icon: Briefcase },
+
+  { to: '/challenge', label: 'Challenge', icon: Zap },
   { to: '/profile', label: 'Profile', icon: User },
 ] as const;
 
