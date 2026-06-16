@@ -1,285 +1,213 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Brain, Award, FileText, Briefcase, TrendingUp, Plus, ChevronRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Brain, BarChart3, Briefcase, Target, TrendingUp,
+  ChevronRight, ExternalLink, Zap,
+} from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { supabase } from '../lib/supabase';
 import AppShell from '../components/ui/AppShell';
-import BackgroundGlow from '../components/ui/BackgroundGlow';
-import ErrorBoundary from '../components/ui/ErrorBoundary';
+import OntologyGraphModal from '../components/ui/OntologyGraphModal';
+import { supabase } from '../lib/supabase';
 
-interface DashboardStats {
-  skillsTracked: number;
-  evidenceAdded: number;
-  rctConverged: number;
-  applicationsent: number;
+interface Skill {
+  id: string;
+  name: string;
+  level: string;
+  domain: string | null;
+  evidence: string | null;
+}
+
+interface Stats {
+  totalSkills: number;
+  withEvidence: number;
+  jobApplications: number;
+  gapsQueued: number;
 }
 
 export default function Dashboard() {
   useDocumentTitle('Dashboard');
-  const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    skillsTracked: 0,
-    evidenceAdded: 0,
-    rctConverged: 0,
-    applicationsent: 0,
-  });
-  const [recentSkills, setRecentSkills] = useState<Array<{id: string; name: string; level: string; domain?: string}>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [recentSkills, setRecentSkills] = useState<Skill[]>([]);
+  const [stats, setStats] = useState<Stats>({ totalSkills: 0, withEvidence: 0, jobApplications: 0, gapsQueued: 0 });
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [graphSkill, setGraphSkill] = useState<{ name: string; level: string } | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    loadDashboard();
-  }, [user]);
+    if (!user) { navigate('/login'); return; }
+    loadData();
+  }, [user, navigate]);
 
-  async function loadDashboard() {
+  async function loadData() {
+    setLoadErr(null);
     try {
-      setLoading(true);
-      setError(null);
-
-      const [skillsRes, appsRes] = await Promise.all([
-        supabase
-          .from('skills')
-          .select('id, name, level, domain, evidence, rct_cleared_at')
-          .eq('user_id', user!.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('job_applications')
-          .select('id')
-          .eq('user_id', user!.id),
+      const [skillsRes, appsRes, gapsRes] = await Promise.all([
+        supabase.from('skills').select('id, name, level, domain, evidence').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(6),
+        supabase.from('job_applications').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
+        supabase.from('skill_gaps').select('id', { count: 'exact', head: true }).eq('user_id', user!.id),
       ]);
-
-      if (skillsRes.error) throw new Error(skillsRes.error.message);
-
-      const skills = skillsRes.data || [];
-      const apps = appsRes.data || [];
-
-      const converged = skills.filter(s => s.rct_cleared_at).length;
-      const withEvidence = skills.filter(s => s.evidence && s.evidence.length > 0).length;
-
+      if (skillsRes.error) throw skillsRes.error;
+      const skills = (skillsRes.data ?? []) as Skill[];
+      setRecentSkills(skills);
       setStats({
-        skillsTracked: skills.length,
-        evidenceAdded: withEvidence,
-        rctConverged: converged,
-        applicationsent: apps.length,
+        totalSkills: skills.length,
+        withEvidence: skills.filter(s => s.evidence).length,
+        jobApplications: appsRes.count ?? 0,
+        gapsQueued: gapsRes.count ?? 0,
       });
-      setRecentSkills(skills.slice(0, 5));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      setLoadErr(e instanceof Error ? e.message : String(e));
     }
   }
 
-  const LEVEL_COLORS: Record<string, string> = {
-    beginner: 'text-blue-400 bg-blue-500/10 border border-blue-500/20',
-    intermediate: 'text-teal-400 bg-teal-500/10 border border-teal-500/20',
-    advanced: 'text-purple-400 bg-purple-500/10 border border-purple-500/20',
-    expert: 'text-amber-400 bg-amber-500/10 border border-amber-500/20',
-  };
+  const handleSignOut = async () => { await signOut(); navigate('/login'); };
+  if (!user) return null;
 
-  const quickCards = [
-    {
-      label: 'Skills Tracked',
-      value: stats.skillsTracked,
-      icon: Brain,
-      color: 'emerald',
-      href: '/skills',
-      desc: 'In your portfolio',
-    },
-    {
-      label: 'Evidence Added',
-      value: stats.evidenceAdded,
-      icon: Award,
-      color: 'teal',
-      href: '/skills',
-      desc: 'Skills with evidence',
-    },
-    {
-      label: 'RCT Converged',
-      value: stats.rctConverged,
-      icon: TrendingUp,
-      color: 'purple',
-      href: '/learn',
-      desc: 'Training complete',
-    },
-    {
-      label: 'Applications',
-      value: stats.applicationsent,
-      icon: Briefcase,
-      color: 'amber',
-      href: '/apply',
-      desc: 'Sent via ApplyAI',
-    },
+  const STAT_CARDS = [
+    { label: 'Skills documented', value: stats.totalSkills, icon: Brain, color: 'emerald', href: '/skills' },
+    { label: 'With evidence', value: stats.withEvidence, icon: BarChart3, color: 'cyan', href: '/skills' },
+    { label: 'Job applications', value: stats.jobApplications, icon: Briefcase, color: 'violet', href: '/apply' },
+    { label: 'Gaps queued', value: stats.gapsQueued, icon: Target, color: 'amber', href: '/apply/gaps' },
   ];
 
   return (
-    <AppShell>
-      <ErrorBoundary>
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-          <BackgroundGlow />
-          <div className="relative z-10 max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <>
+      <AppShell trail={[{ label: 'Dashboard' }]} onSignOut={handleSignOut}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
 
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-white">
-                  Welcome back{user?.email ? ', ' + user.email.split('@')[0] : ''}
-                </h1>
-                <p className="text-slate-400 mt-1">
-                  Your skills intelligence dashboard
-                </p>
-              </div>
-              <Link
-                to="/skills"
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Add Skill
+          {/* Welcome */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-white">
+              Welcome back{user.email ? ', ' + user.email.split('@')[0] : ''}
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">Your skills portfolio at a glance</p>
+          </div>
+
+          {/* Error */}
+          {loadErr && (
+            <div className="p-4 mb-6 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">
+              {loadErr}
+            </div>
+          )}
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {STAT_CARDS.map(({ label, value, icon: Icon, color, href }) => (
+              <Link key={label} to={href}
+                className={'block p-4 bg-slate-800/40 border border-slate-700/40 rounded-2xl hover:border-slate-600/60 transition-colors group'}>
+                <div className={'w-8 h-8 rounded-lg flex items-center justify-center mb-3 bg-' + color + '-500/20 border border-' + color + '-500/30'}>
+                  <Icon className={'w-4 h-4 text-' + color + '-400'} />
+                </div>
+                <div className="text-2xl font-bold text-white">{value}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{label}</div>
               </Link>
-            </div>
+            ))}
+          </div>
 
-            {/* Error banner */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
-                {error}
+          {/* Recent skills + Apply AI cards row */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Recent skills */}
+            <div className="lg:col-span-2 bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-white">Recent Skills</h2>
+                <Link to="/skills" className="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 transition-colors">
+                  View all <ChevronRight className="w-3 h-3" />
+                </Link>
               </div>
-            )}
-
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <Link
-                    key={card.label}
-                    to={card.href}
-                    className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 hover:border-slate-600/70 transition-all group"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className={'w-10 h-10 rounded-lg flex items-center justify-center bg-' + card.color + '-500/10 border border-' + card.color + '-500/20'}>
-                        <Icon className={'w-5 h-5 text-' + card.color + '-400'} />
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
-                    </div>
-                    {loading ? (
-                      <div className="h-8 bg-slate-800 rounded animate-pulse w-16 mb-1" />
-                    ) : (
-                      <p className="text-3xl font-bold text-white">{card.value}</p>
-                    )}
-                    <p className="text-sm font-medium text-slate-300 mt-1">{card.label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{card.desc}</p>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Two-column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-              {/* Recent Skills */}
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-emerald-400" />
-                    Recent Skills
-                  </h2>
-                  <Link to="/skills" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
-                    View all
-                  </Link>
+              {recentSkills.length === 0 ? (
+                <div className="text-center py-8">
+                  <Brain className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">No skills yet.</p>
+                  <Link to="/skills" className="text-xs text-emerald-400 hover:underline mt-1 inline-block">Add your first skill</Link>
                 </div>
-                {loading ? (
-                  <div className="space-y-3">
-                    {[1,2,3].map(i => (
-                      <div key={i} className="h-12 bg-slate-800 rounded-lg animate-pulse" />
-                    ))}
-                  </div>
-                ) : recentSkills.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Brain className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-                    <p className="text-slate-400 text-sm">No skills yet</p>
-                    <Link to="/skills" className="inline-flex items-center gap-1 mt-3 text-emerald-400 hover:text-emerald-300 text-sm transition-colors">
-                      <Plus className="w-3 h-3" /> Add your first skill
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {recentSkills.map(skill => (
-                      <Link
-                        key={skill.id}
-                        to={'/learn?node=' + encodeURIComponent(skill.name)}
-                        className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-white group-hover:text-emerald-300 transition-colors">{skill.name}</p>
-                          {skill.domain && <p className="text-xs text-slate-500">{skill.domain}</p>}
-                        </div>
-                        <span className={'text-xs px-2 py-0.5 rounded-full ' + (LEVEL_COLORS[skill.level] || 'text-slate-400')}>
-                          {skill.level}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ApplyAI Card */}
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-amber-400" />
-                    ApplyAI
-                  </h2>
-                  <Link to="/apply" className="text-xs text-amber-400 hover:text-amber-300 transition-colors">
-                    Open
-                  </Link>
-                </div>
-                <p className="text-sm text-slate-400 mb-5">
-                  Generate résumés from your portfolio, analyze JD skill gaps, and track your job campaign — all connected to your training data.
-                </p>
+              ) : (
                 <div className="space-y-2">
-                  <Link
-                    to="/apply"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 hover:bg-amber-500/10 transition-colors group"
-                  >
-                    <Briefcase className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">Campaign Dashboard</p>
-                      <p className="text-xs text-slate-500">Track applications and outcomes</p>
+                  {recentSkills.map(skill => (
+                    <div key={skill.id} className="group flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-slate-200 font-medium truncate block">{skill.name}</span>
+                        {skill.domain && <span className="text-xs text-slate-500">{skill.domain}</span>}
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <span className="text-xs text-slate-500 hidden sm:inline">{skill.level}</span>
+                        {/* RCT Ontology Graph icon */}
+                        <button
+                          onClick={() => setGraphSkill({ name: skill.name, level: skill.level })}
+                          title={'Open RCT ontology graph for ' + skill.name}
+                          aria-label={'Open RCT ontology graph for ' + skill.name}
+                          className="p-1.5 rounded-lg text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Brain className="w-3.5 h-3.5" />
+                        </button>
+                        {/* Learn node link */}
+                        <Link
+                          to={'/learn?node=' + encodeURIComponent(skill.name)}
+                          aria-label={'Open ' + skill.name + ' in RCT graph'}
+                          className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-amber-400 transition-colors" />
-                  </Link>
-                  <Link
-                    to="/apply/resume"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors group"
-                  >
-                    <FileText className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">Resume Builder</p>
-                      <p className="text-xs text-slate-500">Generate from portfolio skills</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-400 transition-colors" />
-                  </Link>
-                  <Link
-                    to="/apply/gaps"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-purple-500/5 border border-purple-500/20 hover:bg-purple-500/10 transition-colors group"
-                  >
-                    <TrendingUp className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">Gap Analyzer</p>
-                      <p className="text-xs text-slate-500">Find missing skills in any JD</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-purple-400 transition-colors" />
-                  </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ApplyAI quick links */}
+            <div className="space-y-4">
+              <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="w-4 h-4 text-violet-400" />
+                  <h2 className="text-sm font-semibold text-white">ApplyAI</h2>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Resume Builder', href: '/apply/resume', color: 'emerald' },
+                    { label: 'JD Gap Analyzer', href: '/apply/gaps', color: 'cyan' },
+                    { label: 'Applications', href: '/apply', color: 'violet' },
+                  ].map(({ label, href, color }) => (
+                    <Link key={label} to={href}
+                      className={'flex items-center justify-between px-3 py-2.5 rounded-xl bg-' + color + '-500/10 border border-' + color + '-500/20 text-' + color + '-300 text-xs font-medium hover:bg-' + color + '-500/20 transition-colors'}>
+                      {label}
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-4 h-4 text-amber-400" />
+                  <h2 className="text-sm font-semibold text-white">Learn</h2>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { label: 'RCT Graph', href: '/learn', color: 'amber' },
+                    { label: 'Coverage Audit', href: '/learn?tab=audit', color: 'cyan' },
+                    { label: 'Generate Domain', href: '/learn?tab=generate', color: 'violet' },
+                  ].map(({ label, href, color }) => (
+                    <Link key={label} to={href}
+                      className={'flex items-center justify-between px-3 py-2.5 rounded-xl bg-' + color + '-500/10 border border-' + color + '-500/20 text-' + color + '-300 text-xs font-medium hover:bg-' + color + '-500/20 transition-colors'}>
+                      {label}
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  ))}
                 </div>
               </div>
             </div>
-
           </div>
         </div>
-      </ErrorBoundary>
-    </AppShell>
+      </AppShell>
+
+      {/* RCT Ontology Graph Modal */}
+      {graphSkill && (
+        <OntologyGraphModal
+          skillName={graphSkill.name}
+          skillLevel={graphSkill.level}
+          onClose={() => setGraphSkill(null)}
+        />
+      )}
+    </>
   );
 }
