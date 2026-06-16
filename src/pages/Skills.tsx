@@ -1,216 +1,114 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Brain, Plus, X, ChevronDown, BookOpen, Tag,
+  ExternalLink, Loader2, AlertCircle, CheckCircle2,
+} from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { supabase } from '../lib/supabase';
-import { isRctMigrationError } from '../lib/skillsSchema';
 import AppShell from '../components/ui/AppShell';
-import { skillsToMarkdown, downloadMarkdown } from '../lib/portfolioExport';
-import { Plus, Trash2, BookOpen, Search, Filter, ChevronDown, Award, X, Save, Loader2, Pencil, Brain, Download, AlertCircle, ArrowUpDown, RefreshCw } from 'lucide-react';
+import OntologyGraphModal from '../components/ui/OntologyGraphModal';
+import { supabase } from '../lib/supabase';
+
+const LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
+type Level = typeof LEVELS[number];
+
+const LEVEL_STYLES: Record<Level, string> = {
+  beginner: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+  intermediate: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+  advanced: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+  expert: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+};
 
 interface Skill {
   id: string;
   name: string;
-  level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  evidence: string;
-  tags: string[];
-  source?: string;
-  rct_node_id?: string;
-  rct_domain?: string;
-  rct_tier?: string;
-  rct_cret?: number;
-  rct_cleared_at?: string;
-  created_at: string;
+  level: Level;
+  domain: string | null;
+  evidence: string | null;
+  tags: string[] | null;
+  rct_node_id: string | null;
 }
 
-const LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'] as const;
-const LEVEL_COLORS: Record<string, string> = {
-  beginner: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  intermediate: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  advanced: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  expert: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-};
-const LEVEL_DOT: Record<string, string> = {
-  beginner: 'bg-blue-400',
-  intermediate: 'bg-amber-400',
-  advanced: 'bg-emerald-400',
-  expert: 'bg-purple-400',
-};
-
-const INPUT_CLS = 'w-full px-4 py-3 bg-slate-900/50 border border-slate-600/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 text-white placeholder-slate-500 transition-all duration-300';
-const LABEL_CLS = 'block text-sm font-medium text-slate-300 mb-2';
-
-const EMPTY_FORM = { name: '', level: 'beginner' as Skill['level'], evidence: '', tags: '' };
-
-type SortKey = 'newest' | 'oldest' | 'name' | 'level';
-
-const LEVEL_RANK: Record<Skill['level'], number> = {
-  beginner: 0,
-  intermediate: 1,
-  advanced: 2,
-  expert: 3,
-};
-
 export default function Skills() {
-  useDocumentTitle('Skills');
+  useDocumentTitle('Skills Portfolio');
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingRct, setEditingRct] = useState(false);
-  const [detailSkill, setDetailSkill] = useState<Skill | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState('');
-  const [filterLevel, setFilterLevel] = useState('');
-  const [filterSource, setFilterSource] = useState('');
-  const [sortBy, setSortBy] = useState<SortKey>('newest');
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [error, setError] = useState('');
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(false);
 
-  useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
+  // OntologyGraphModal state
+  const [graphSkill, setGraphSkill] = useState<{ name: string; level: string } | null>(null);
+
+  // Add-skill form state
+  const [form, setForm] = useState({
+    name: '',
+    level: 'intermediate' as Level,
+    domain: '',
+    evidence: '',
+    tags: '',
+  });
 
   useEffect(() => {
-    if (!user) return;
-    fetchSkills();
-  }, [user]);
+    if (!user) { navigate('/login'); return; }
+    loadSkills();
+  }, [user, navigate]);
 
-  useEffect(() => {
-    const id = searchParams.get('skill');
-    if (!id || loading || skills.length === 0) return;
-    const skill = skills.find(s => s.id === id);
-    if (!skill) return;
-    setDetailSkill(skill);
-    const next = new URLSearchParams(searchParams);
-    next.delete('skill');
-    setSearchParams(next, { replace: true });
-  }, [skills, loading, searchParams, setSearchParams]);
-
-  async function fetchSkills() {
+  async function loadSkills() {
     setLoading(true);
-    setFetchError('');
-    const { data, error: err } = await supabase.from('skills').select('*').order('created_at', { ascending: false });
-    if (err) {
-      setFetchError(err.message);
-      setSkills([]);
-    } else {
-      setSkills(data || []);
-    }
-    setLoading(false);
-  }
-
-  function openAdd() {
-    setEditingId(null);
-    setEditingRct(false);
-    setForm(EMPTY_FORM);
-    setError('');
-    setShowForm(true);
-  }
-
-  function openEdit(skill: Skill) {
-    setEditingId(skill.id);
-    setEditingRct(skill.source === 'rct');
-    setForm({
-      name: skill.name,
-      level: skill.level,
-      evidence: skill.evidence || '',
-      tags: (skill.tags || []).join(', '),
-    });
-    setError('');
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setEditingId(null);
-    setEditingRct(false);
-    setForm(EMPTY_FORM);
-    setError('');
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
+    setError(null);
     try {
-      const payload = {
+      const { data, error: err } = await supabase
+        .from('skills')
+        .select('id, name, level, domain, evidence, tags, rct_node_id')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false });
+      if (err) throw err;
+      setSkills((data ?? []) as Skill[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAddSkill(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSaving(true);
+    setSaveErr(null);
+    setSaveOk(false);
+    try {
+      const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
+      const { error: err } = await supabase.from('skills').insert({
+        user_id: user!.id,
         name: form.name.trim(),
         level: form.level,
-        evidence: form.evidence.trim(),
-        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-      };
-
-      if (editingId) {
-        const { error: err } = await supabase.from('skills').update(payload).eq('id', editingId);
-        if (err) throw err;
-        setSkills(prev => prev.map(s => s.id === editingId ? { ...s, ...payload } : s));
-      } else {
-        const { data, error: err } = await supabase.from('skills').insert({
-          user_id: user!.id,
-          ...payload,
-          source: 'manual',
-        }).select().single();
-        if (err) throw err;
-        if (data) setSkills(prev => [data as Skill, ...prev]);
-      }
-
-      closeForm();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Save failed';
-      setError(isRctMigrationError(msg)
-        ? `${msg} — run supabase/setup_all.sql if RCT fields are missing.`
-        : msg);
+        domain: form.domain.trim() || null,
+        evidence: form.evidence.trim() || null,
+        tags: tags.length ? tags : null,
+      });
+      if (err) throw err;
+      setSaveOk(true);
+      setForm({ name: '', level: 'intermediate', domain: '', evidence: '', tags: '' });
+      await loadSkills();
+      setTimeout(() => { setShowAdd(false); setSaveOk(false); }, 1200);
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : 'Save failed');
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this skill?')) return;
-    const { error: err } = await supabase.from('skills').delete().eq('id', id);
-    if (err) setFetchError(err.message);
-    else {
-      if (detailSkill?.id === id) setDetailSkill(null);
-      setSkills(prev => prev.filter(s => s.id !== id));
-    }
-  }
-
-  const hasActiveFilters = !!(search || filterLevel || filterSource);
-
-  const filtered = useMemo(() => {
-    const list = skills.filter(s => {
-      const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase());
-      const matchLevel = !filterLevel || s.level === filterLevel;
-      const matchSource = !filterSource || (filterSource === 'rct' ? s.source === 'rct' : s.source !== 'rct');
-      return matchSearch && matchLevel && matchSource;
-    });
-
-    const sorted = [...list];
-    switch (sortBy) {
-      case 'oldest':
-        sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
-        break;
-      case 'name':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'level':
-        sorted.sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level]);
-        break;
-      default:
-        sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
-    }
-    return sorted;
-  }, [skills, search, filterLevel, filterSource, sortBy]);
-
-  function handleExport() {
-    const exportSet = hasActiveFilters ? filtered : skills;
-    const md = skillsToMarkdown(exportSet, user?.email);
-    const date = new Date().toISOString().slice(0, 10);
-    const suffix = hasActiveFilters ? '-filtered' : '';
-    downloadMarkdown(md, `witnessskills-portfolio-${date}${suffix}.md`);
+  async function handleDeleteSkill(id: string) {
+    await supabase.from('skills').delete().eq('id', id).eq('user_id', user!.id);
+    setSkills(prev => prev.filter(s => s.id !== id));
   }
 
   const handleSignOut = async () => { await signOut(); navigate('/login'); };
@@ -218,294 +116,247 @@ export default function Skills() {
   if (!user) return null;
 
   return (
-    <AppShell
-      trail={[{ label: 'Dashboard', href: '/' }, { label: 'My Skills' }]}
-      onSignOut={handleSignOut}
-      actions={
-        <div className="flex items-center gap-2">
-          <button onClick={fetchSkills} disabled={loading} title="Refresh skills"
-            className="hidden sm:flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-400 border border-slate-700/60 px-3 py-1.5 rounded-lg disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          {skills.length > 0 && (
-            <button onClick={handleExport} title={hasActiveFilters ? `Export ${filtered.length} filtered skills` : 'Export all skills'}
-              className="hidden sm:flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-400 border border-slate-700/60 px-3 py-1.5 rounded-lg">
-              <Download className="w-4 h-4" />
-              Export{hasActiveFilters ? ` (${filtered.length})` : ''}
-            </button>
-          )}
-          <button onClick={openAdd}
-            className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-emerald-500/20 transition-all">
-            <Plus className="w-4 h-4" /><span className="hidden sm:inline">Add</span>
-          </button>
-        </div>
-      }
-    >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-emerald-400" />
-            </div>
+    <>
+      <AppShell
+        trail={[{ label: 'Dashboard', href: '/' }, { label: 'Skills Portfolio' }]}
+        onSignOut={handleSignOut}
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl font-bold text-white">Skills Portfolio</h1>
-              <p className="text-slate-400 text-sm">
-                {hasActiveFilters
-                  ? `Showing ${filtered.length} of ${skills.length} skills`
-                  : `${skills.length} skill${skills.length !== 1 ? 's' : ''} documented`}
+              <p className="text-sm text-slate-400 mt-1">
+                {skills.length} skill{skills.length !== 1 ? 's' : ''} documented
               </p>
             </div>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-sm font-semibold hover:bg-emerald-500/30 transition-colors"
+              aria-label="Add a new skill"
+            >
+              <Plus className="w-4 h-4" /> Add skill
+            </button>
           </div>
-        </div>
 
-        {fetchError && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl">
-              <span className="flex-1">{fetchError}</span>
-              <button onClick={fetchSkills} className="text-xs font-medium text-red-300 hover:text-red-200 border border-red-500/30 px-3 py-1.5 rounded-lg shrink-0">
-                Retry
-              </button>
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2 p-4 mb-6 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
             </div>
-            {isRctMigrationError(fetchError) && (
-              <p className="mt-2 text-amber-300/90 text-sm bg-amber-500/10 border border-amber-500/25 px-4 py-3 rounded-xl flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  RCT fields may be missing — run migration{' '}
-                  <code className="text-amber-200 text-xs">supabase/setup_all.sql</code>{' '}
-                  (fresh) or <code className="text-amber-200 text-xs">20260615000001_add_rct_fields_to_skills.sql</code>{' '}
-                  (existing) in the Supabase SQL editor, then refresh.
-                </span>
-              </p>
-            )}
-          </div>
-        )}
+          )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input type="text" placeholder="Search skills..." value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+          {/* Loading */}
+          {loading && (
+            <div className="flex items-center justify-center py-20" role="status" aria-live="polite">
+              <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
             </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)}
-                className="pl-10 pr-8 py-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 appearance-none cursor-pointer">
-                <option value="">All levels</option>
-                {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <select value={filterSource} onChange={e => setFilterSource(e.target.value)}
-                className="pl-10 pr-8 py-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 appearance-none cursor-pointer">
-                <option value="">All sources</option>
-                <option value="rct">RCT evidence</option>
-                <option value="manual">Manual</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-            </div>
-            <div className="relative">
-              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)}
-                className="pl-10 pr-8 py-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 appearance-none cursor-pointer">
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="name">Name A–Z</option>
-                <option value="level">Highest level</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-            </div>
-            {hasActiveFilters && (
-              <button onClick={() => { setSearch(''); setFilterLevel(''); setFilterSource(''); }}
-                className="text-sm text-slate-400 hover:text-emerald-400 border border-slate-700/60 px-3 py-2.5 rounded-xl whitespace-nowrap">
-                Clear filters
-              </button>
-            )}
-          </div>
-        </div>
+          )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
+          {/* Empty state */}
+          {!loading && !error && skills.length === 0 && (
             <div className="text-center py-20">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800/40 border border-slate-700/40 flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-7 h-7 text-slate-600" />
-              </div>
-              <h3 className="text-slate-300 font-semibold mb-2">{search || filterLevel || filterSource ? 'No skills match your filters' : 'No skills yet'}</h3>
-              <p className="text-slate-500 text-sm mb-6">
-                {search || filterLevel || filterSource ? 'Try adjusting your search or filter' : 'Add a skill manually or clear nodes in Learn to sync RCT evidence'}
-              </p>
-              {hasActiveFilters && (
-                <button onClick={() => { setSearch(''); setFilterLevel(''); setFilterSource(''); }}
-                  className="text-sm text-emerald-400 hover:text-emerald-300">
-                  Clear filters
-                </button>
-              )}
-              {!search && !filterLevel && !filterSource && (
-                <div className="flex gap-3 justify-center">
-                  <button onClick={openAdd} className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold">Add skill</button>
-                  <Link to="/learn" className="bg-purple-500/10 border border-purple-500/30 text-purple-300 px-6 py-2.5 rounded-xl text-sm font-semibold">Go to Learn</Link>
-                </div>
-              )}
+              <Brain className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <h3 className="text-slate-300 font-semibold mb-1">No skills yet</h3>
+              <p className="text-slate-500 text-sm mb-5">Add your first skill to start building your portfolio.</p>
+              <button
+                onClick={() => setShowAdd(true)}
+                className="px-5 py-2.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-sm font-semibold hover:bg-emerald-500/30 transition-colors"
+              >
+                Add your first skill
+              </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map(skill => (
-                <div key={skill.id}
-                  onClick={() => setDetailSkill(skill)}
-                  className="group backdrop-blur-xl bg-slate-800/30 border border-slate-700/40 rounded-2xl p-5 hover:border-slate-600/60 hover:bg-slate-800/50 transition-all duration-300 cursor-pointer">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${LEVEL_DOT[skill.level]}`} />
-                      <h3 className="font-semibold text-white truncate">{skill.name}</h3>
+          )}
+
+          {/* Skill cards */}
+          {!loading && skills.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {skills.map(skill => (
+                <div
+                  key={skill.id}
+                  className="group relative p-4 bg-slate-800/40 border border-slate-700/40 rounded-2xl hover:border-slate-600/60 transition-colors"
+                >
+                  {/* Card top row */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-white text-sm truncate">{skill.name}</span>
+                        <span className={'text-xs px-2 py-0.5 rounded-full border ' + LEVEL_STYLES[skill.level]}>
+                          {skill.level}
+                        </span>
+                      </div>
+                      {skill.domain && (
+                        <p className="text-xs text-slate-500 mt-0.5">{skill.domain}</p>
+                      )}
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => openEdit(skill)} className="text-slate-600 hover:text-emerald-400 p-1" title="Edit">
-                        <Pencil className="w-4 h-4" />
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* RCT Ontology Graph icon - opens AI-powered modal */}
+                      <button
+                        onClick={() => setGraphSkill({ name: skill.name, level: skill.level })}
+                        title={'Open RCT ontology graph for ' + skill.name}
+                        aria-label={'Open RCT ontology graph for ' + skill.name}
+                        className="p-1.5 rounded-lg text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 transition-colors opacity-60 hover:opacity-100"
+                      >
+                        <Brain className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(skill.id)} className="text-slate-600 hover:text-red-400 p-1" title="Delete">
-                        <Trash2 className="w-4 h-4" />
+
+                      {/* Deep-link to Learn node */}
+                      <Link
+                        to={'/learn?node=' + encodeURIComponent(skill.name)}
+                        title={'Open ' + skill.name + ' in RCT learning graph'}
+                        aria-label={'Open ' + skill.name + ' in RCT learning graph'}
+                        className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors opacity-60 hover:opacity-100"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteSkill(skill.id)}
+                        title={'Remove ' + skill.name}
+                        aria-label={'Remove ' + skill.name}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                  <div className="mb-3 flex flex-wrap gap-1.5">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${LEVEL_COLORS[skill.level]}`}>
-                      {skill.level.charAt(0).toUpperCase() + skill.level.slice(1)}
-                    </span>
-                    {skill.source === 'rct' && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border bg-purple-500/20 text-purple-300 border-purple-500/30">
-                        RCT{skill.rct_tier ? ` · ${skill.rct_tier}` : ''}{skill.rct_cret != null ? ` · C_ret ${Number(skill.rct_cret).toFixed(2)}` : ''}
-                      </span>
-                    )}
-                  </div>
+
+                  {/* Evidence */}
                   {skill.evidence && (
-                    <p className="text-slate-400 text-sm leading-relaxed mb-3 line-clamp-3">{skill.evidence}</p>
+                    <div className="flex gap-1.5 mt-2">
+                      <BookOpen className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-slate-400 line-clamp-2">{skill.evidence}</p>
+                    </div>
                   )}
-                  {skill.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
+
+                  {/* Tags */}
+                  {skill.tags && skill.tags.length > 0 && (
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      <Tag className="w-3 h-3 text-slate-600" />
                       {skill.tags.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-slate-700/60 text-slate-400 text-xs rounded-md border border-slate-600/40">{tag}</span>
+                        <span key={tag}
+                          className="text-xs px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">
+                          {tag}
+                        </span>
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-700/40">
-                    <span className="text-xs text-slate-600">{new Date(skill.created_at).toLocaleDateString()}</span>
-                    {skill.source === 'rct' && skill.rct_node_id && (
-                      <Link to={`/learn?node=${skill.rct_node_id}`}
-                        className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300">
-                        <Brain className="w-3 h-3" /> retrain
-                      </Link>
-                    )}
-                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
+      </AppShell>
 
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={closeForm} />
-            <div className="relative w-full max-w-lg backdrop-blur-xl bg-slate-800/90 border border-slate-700/60 rounded-2xl shadow-2xl p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <Award className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-white">{editingId ? 'Edit Skill' : 'Add New Skill'}</h2>
-                </div>
-                <button onClick={closeForm} className="text-slate-500 hover:text-slate-300"><X className="w-5 h-5" /></button>
+      {/* Add skill modal */}
+      {showAdd && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowAdd(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add new skill"
+        >
+          <div className="w-full max-w-md bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
+              <h2 className="font-semibold text-white text-sm">Add New Skill</h2>
+              <button onClick={() => setShowAdd(false)} aria-label="Close" className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAddSkill} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Skill name *</label>
+                <input
+                  required
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. TypeScript"
+                  className="w-full px-3 py-2 bg-slate-800/60 border border-slate-600/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60"
+                  aria-required="true"
+                />
               </div>
-
-              {editingRct && (
-                <p className="text-xs text-purple-300/80 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2 mb-4">
-                  RCT-synced skill — name is managed by Learn. You can update level, evidence notes, and tags.
-                </p>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className={LABEL_CLS}>Skill name *</label>
-                  <input type="text" required value={form.name} readOnly={editingRct}
-                    onChange={e => setForm({ ...form, name: e.target.value })} className={INPUT_CLS + (editingRct ? ' opacity-60 cursor-not-allowed' : '')}
-                    placeholder="e.g. React, Data Analysis" />
-                </div>
-                <div>
-                  <label className={LABEL_CLS}>Proficiency level *</label>
-                  <select value={form.level} onChange={e => setForm({ ...form, level: e.target.value as Skill['level'] })} className={INPUT_CLS + ' cursor-pointer'}>
-                    {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Level</label>
+                <div className="relative">
+                  <select
+                    value={form.level}
+                    onChange={e => setForm(f => ({ ...f, level: e.target.value as Level }))}
+                    className="w-full px-3 py-2 bg-slate-800/60 border border-slate-600/60 rounded-xl text-sm text-white appearance-none focus:outline-none focus:border-emerald-500/60"
+                  >
+                    {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                <div>
-                  <label className={LABEL_CLS}>Evidence & proof</label>
-                  <textarea value={form.evidence} onChange={e => setForm({ ...form, evidence: e.target.value })} className={INPUT_CLS} rows={4}
-                    placeholder="Describe your evidence…" />
-                </div>
-                <div>
-                  <label className={LABEL_CLS}>Tags <span className="text-slate-500 font-normal">(comma-separated)</span></label>
-                  <input type="text" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} className={INPUT_CLS} placeholder="e.g. frontend, typescript" />
-                </div>
-                {error && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>}
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={closeForm} className="flex-1 px-4 py-3 bg-slate-700/60 text-slate-300 rounded-xl font-medium">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-xl font-semibold disabled:opacity-50">
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Skill'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Domain (optional)</label>
+                <input
+                  value={form.domain}
+                  onChange={e => setForm(f => ({ ...f, domain: e.target.value }))}
+                  placeholder="e.g. Backend, Frontend, DevOps"
+                  className="w-full px-3 py-2 bg-slate-800/60 border border-slate-600/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Evidence (optional)</label>
+                <textarea
+                  value={form.evidence}
+                  onChange={e => setForm(f => ({ ...f, evidence: e.target.value }))}
+                  placeholder="Describe how you've demonstrated this skill"
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-800/60 border border-slate-600/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Tags (comma-separated)</label>
+                <input
+                  value={form.tags}
+                  onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  placeholder="e.g. frontend, react, hooks"
+                  className="w-full px-3 py-2 bg-slate-800/60 border border-slate-600/60 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60"
+                />
+              </div>
 
-        {detailSkill && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDetailSkill(null)}>
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
-            <div className="relative w-full max-w-lg max-h-[85vh] overflow-auto backdrop-blur-xl bg-slate-800/95 border border-slate-700/60 rounded-2xl shadow-2xl p-6"
-              onClick={e => e.stopPropagation()}>
-              <button onClick={() => setDetailSkill(null)} className="absolute top-4 right-4 text-slate-500 hover:text-slate-300"><X className="w-5 h-5" /></button>
-              <h2 className="text-xl font-bold text-white mb-1 pr-8">{detailSkill.name}</h2>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className={`text-xs px-2.5 py-1 rounded-lg border ${LEVEL_COLORS[detailSkill.level]}`}>
-                  {detailSkill.level.charAt(0).toUpperCase() + detailSkill.level.slice(1)}
-                </span>
-                {detailSkill.source === 'rct' && (
-                  <span className="text-xs px-2.5 py-1 rounded-lg border bg-purple-500/20 text-purple-300 border-purple-500/30">
-                    RCT{detailSkill.rct_tier ? ` · ${detailSkill.rct_tier}` : ''}{detailSkill.rct_cret != null ? ` · C_ret ${Number(detailSkill.rct_cret).toFixed(2)}` : ''}
-                  </span>
-                )}
-              </div>
-              {detailSkill.evidence ? (
-                <pre className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed bg-slate-900/40 border border-slate-700/40 rounded-xl p-4 mb-4 font-sans">{detailSkill.evidence}</pre>
-              ) : (
-                <p className="text-sm text-slate-500 italic mb-4">No evidence documented yet.</p>
-              )}
-              {detailSkill.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {detailSkill.tags.map(tag => (
-                    <span key={tag} className="px-2 py-0.5 bg-slate-700/60 text-slate-400 text-xs rounded-md border border-slate-600/40">{tag}</span>
-                  ))}
+              {saveErr && (
+                <div className="flex items-center gap-2 text-xs text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2" role="alert">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{saveErr}
                 </div>
               )}
-              <div className="flex gap-2 pt-2 border-t border-slate-700/40">
-                <button onClick={() => { setDetailSkill(null); openEdit(detailSkill); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700/60 text-slate-200 rounded-xl text-sm font-medium hover:bg-slate-700">
-                  <Pencil className="w-4 h-4" /> Edit
+              {saveOk && (
+                <div className="flex items-center gap-2 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-3 py-2" role="status">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />Skill saved!
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setShowAdd(false)}
+                  className="flex-1 px-4 py-2 text-sm text-slate-400 border border-slate-700/50 rounded-xl hover:bg-slate-700/30 transition-colors">
+                  Cancel
                 </button>
-                {detailSkill.source === 'rct' && detailSkill.rct_node_id && (
-                  <Link to={`/learn?node=${detailSkill.rct_node_id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded-xl text-sm font-medium hover:bg-purple-500/20">
-                    <Brain className="w-4 h-4" /> Retrain
-                  </Link>
-                )}
+                <button type="submit" disabled={saving}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-emerald-500/30 border border-emerald-500/50 rounded-xl hover:bg-emerald-500/40 disabled:opacity-50 transition-colors">
+                  {saving ? 'Saving…' : 'Add Skill'}
+                </button>
               </div>
-            </div>
+            </form>
           </div>
-        )}
-    </AppShell>
+        </div>
+      )}
+
+      {/* RCT Ontology Graph Modal */}
+      {graphSkill && (
+        <OntologyGraphModal
+          skillName={graphSkill.name}
+          skillLevel={graphSkill.level}
+          onClose={() => setGraphSkill(null)}
+        />
+      )}
+    </>
   );
 }
