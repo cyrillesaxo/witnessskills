@@ -36,6 +36,7 @@ export default function ResumeBuilder() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [graphSkill, setGraphSkill] = useState<{ name: string; level: string } | null>(null);
+  const [resumeVersion, setResumeVersion] = useState<'A' | 'B'>('A');
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,33 +62,65 @@ export default function ResumeBuilder() {
     }
   }
 
-  function buildResumeText() {
-    const lines: string[] = [
-      'SKILLS PORTFOLIO',
-      '================',
-      '',
-      'CORE TECHNICAL SKILLS',
-      '─────────────────────',
-      skills.map(s => s.name + ' (' + s.level + ')').join(' | '),
-      '',
-    ];
-    const byDomain: Record<string, Skill[]> = {};
-    skills.forEach(s => {
-      const d = s.domain ?? 'General';
-      if (!byDomain[d]) byDomain[d] = [];
-      byDomain[d].push(s);
-    });
-    Object.entries(byDomain).forEach(([domain, list]) => {
-      lines.push(domain.toUpperCase());
-      lines.push('─'.repeat(domain.length));
-      list.forEach(s => {
-        lines.push('• ' + s.name + ' [' + s.level + ']');
-        if (s.evidence) lines.push('  Evidence: ' + s.evidence);
-        if (s.tags?.length) lines.push('  Tags: ' + s.tags.join(', '));
+  function buildResumeText(version: 'A' | 'B' = resumeVersion) {
+    if (version === 'A') {
+      // Version A: ATS-optimised (keyword-dense, scannable)
+      const lines: string[] = [
+        'SKILLS PORTFOLIO — ATS VERSION',
+        '================================',
+        '',
+        'CORE TECHNICAL SKILLS',
+        skills.map(s => s.name.toUpperCase() + ' (' + s.level + ')').join(' | '),
+        '',
+        'SKILLS BY DOMAIN',
+        '─────────────────',
+      ];
+      const byDomain: Record<string, Skill[]> = {};
+      skills.forEach(s => {
+        const domain = s.domain || 'General';
+        if (!byDomain[domain]) byDomain[domain] = [];
+        byDomain[domain].push(s);
       });
-      lines.push('');
-    });
-    return lines.join('\n');
+      Object.entries(byDomain).forEach(([domain, domainSkills]) => {
+        lines.push('');
+        lines.push(domain.toUpperCase() + ':');
+        domainSkills.forEach(s => {
+          lines.push('• ' + s.name + ' [' + s.level + ']');
+          if (s.tags?.length) lines.push('  Keywords: ' + s.tags.join(', '));
+        });
+      });
+      return lines.join('\n');
+    } else {
+      // Version B: Human/Networking — narrative with evidence
+      const lines: string[] = [
+        'SKILLS PORTFOLIO — HUMAN / NETWORKING VERSION',
+        '===============================================',
+        '',
+        'SUMMARY',
+        '─────────',
+        'A practitioner with depth in ' + [...new Set(skills.map(s => s.domain || 'Technology').filter(Boolean))].slice(0, 3).join(', ') + '.',
+        '',
+        'SKILL NARRATIVES',
+        '─────────────────',
+      ];
+      const byDomain: Record<string, Skill[]> = {};
+      skills.forEach(s => {
+        const domain = s.domain || 'General';
+        if (!byDomain[domain]) byDomain[domain] = [];
+        byDomain[domain].push(s);
+      });
+      Object.entries(byDomain).forEach(([domain, domainSkills]) => {
+        lines.push('');
+        lines.push(domain + ':');
+        domainSkills.forEach(s => {
+          lines.push('');
+          lines.push('  ' + s.name + ' — ' + s.level.charAt(0).toUpperCase() + s.level.slice(1));
+          if (s.evidence) lines.push('  ' + s.evidence);
+          if (s.tags?.length) lines.push('  Areas: ' + s.tags.join(' · '));
+        });
+      });
+      return lines.join('\n');
+    }
   }
 
   function handleCopy() {
@@ -171,6 +204,30 @@ export default function ResumeBuilder() {
             <span>Skills tracked: <strong className="text-slate-300">{skills.length}</strong></span>
             <span>With evidence: <strong className="text-slate-300">{withEvidence.length}</strong></span>
             <span>Domains: <strong className="text-slate-300">{Object.keys(byDomain).length}</strong></span>
+          </div>
+
+          {/* Version selector */}
+          <div className="flex gap-2 mb-5">
+            <button
+              onClick={() => setResumeVersion('A')}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                resumeVersion === 'A'
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-transparent border-slate-600 text-slate-400 hover:text-white hover:border-slate-400'
+              }`}
+            >
+              Version A — ATS
+            </button>
+            <button
+              onClick={() => setResumeVersion('B')}
+              className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                resumeVersion === 'B'
+                  ? 'bg-violet-600 border-violet-500 text-white'
+                  : 'bg-transparent border-slate-600 text-slate-400 hover:text-white hover:border-slate-400'
+              }`}
+            >
+              Version B — Human / Networking
+            </button>
           </div>
 
           {/* Error */}
