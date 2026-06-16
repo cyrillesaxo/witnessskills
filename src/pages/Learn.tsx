@@ -194,13 +194,23 @@ export default function Learn() {
           onNewTraining={() => switchTab('generate')}
         />
         {tab === 'learn' && (
-          <LearningTool
-            key={domainKey}
-            domain={domain}
-            domainKey={domainKey}
-            focusNodeId={focusNodeId}
-            onFocusHandled={() => setFocusNodeId(null)}
-          />
+          domain.nodes.some(n => n.levels && n.levels.length > 0) ? (
+            <LearningTool
+              key={domainKey}
+              domain={domain}
+              domainKey={domainKey}
+              focusNodeId={focusNodeId}
+              onFocusHandled={() => setFocusNodeId(null)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+              <span className="text-4xl">🚧</span>
+              <p className="text-slate-300 font-medium">{domain.name} training coming soon</p>
+              <p className="text-slate-500 text-sm max-w-sm">
+                This domain is on the roadmap. Use the Generate tab to build a custom training now.
+              </p>
+            </div>
+          )
         )}
         {tab === 'audit' && (
           <CoverageAuditor
