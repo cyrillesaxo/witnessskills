@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Brain, BarChart3, Sparkles, Plus, X } from 'lucide-react';
+import { Brain, BarChart3, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
 import LearningTool from '../components/learn/LearningTool';
 import CoverageAuditor from '../components/audit/CoverageAuditor';
 import GeneratorPanel from '../components/learn/GeneratorPanel';
+import TrainingTable, { type TrainingRow } from '../components/learn/TrainingTable';
 import { DOMAINS } from '../lib/rct/mavenOntology';
 import { hydrateGenerated } from '../lib/rct/domainGenerator';
 import type { Domain } from '../lib/rct/types';
@@ -30,7 +31,6 @@ function parseTab(value: string | null): Tab | null {
   return null;
 }
 
-// Stored as { key, domain } pairs so we preserve the gen: key alongside the domain
 interface StoredTraining {
   key: string;
   raw: Parameters<typeof hydrateGenerated>[0];
@@ -72,12 +72,17 @@ export default function Learn() {
     () => loadCustomTrainings()
   );
 
-  // Merge built-in and custom domains by key
   const allDomains: Record<string, Domain> = {
     ...Object.fromEntries(Object.entries(DOMAINS)),
     ...Object.fromEntries(customTrainings.map(({ key, domain }) => [key, domain])),
   };
   const domain: Domain = allDomains[domainKey] ?? DOMAINS.maven;
+
+  // Build table rows: built-ins first, then custom
+  const tableRows: TrainingRow[] = [
+    ...Object.entries(DOMAINS).map(([k, d]) => ({ key: k, name: d.name, domain: d, custom: false })),
+    ...customTrainings.map(({ key, domain: d }) => ({ key, name: d.name, domain: d, custom: true })),
+  ];
 
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [generatePrompt, setGeneratePrompt] = useState('');
@@ -115,13 +120,17 @@ export default function Learn() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  // Called when GeneratorPanel creates a new training
   const handleNewDomain = useCallback((dom: Domain, key: string) => {
     setCustomTrainings(prev => {
       const updated = [...prev.filter(t => t.key !== key), { key, domain: dom }];
       saveCustomTrainings(updated);
       return updated;
     });
+    setDomainKey(key);
+    switchTab('learn');
+  }, [switchTab]);
+
+  const handleSelectTraining = useCallback((key: string) => {
     setDomainKey(key);
     switchTab('learn');
   }, [switchTab]);
@@ -156,50 +165,12 @@ export default function Learn() {
     <div className="flex items-center gap-1 p-1 bg-slate-800/40 border border-slate-700/40 rounded-xl">
       {TABS.map(({ id, label, icon: Icon }) => (
         <button key={id} onClick={() => switchTab(id)}
-          className={`flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg transition-colors $\{
+          className={'flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg transition-colors ' + (
             tab === id ? TAB_STYLES[id] : 'text-slate-400 hover:text-slate-200'
-          }`}>
+          )}>
           <Icon className="w-3.5 h-3.5" />{label}
         </button>
       ))}
-    </div>
-  );
-
-  // Build list of all selectable trainings
-  const allTrainings = [
-    ...Object.entries(DOMAINS).map(([k, d]) => ({ key: k, name: d.name, custom: false })),
-    ...customTrainings.map(({ key, domain: d }) => ({ key, name: d.name, custom: true })),
-  ];
-
-  const trainingSwitcher = (
-    <div className="flex flex-wrap items-center gap-1.5 mb-4">
-      {allTrainings.map(({ key, name, custom }) => (
-        <span key={key}
-          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors $\{
-            domainKey === key
-              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-              : 'bg-slate-800/40 border-slate-700/40 text-slate-400 hover:text-slate-200 hover:border-slate-500/50'
-          }`}
-          onClick={() => { setDomainKey(key); switchTab('learn'); }}
-        >
-          {name}
-          {custom && (
-            <button
-              className="ml-0.5 text-slate-500 hover:text-red-400 transition-colors"
-              onClick={(e) => { e.stopPropagation(); removeCustomTraining(key); }}
-              title="Remove training"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </span>
-      ))}
-      <button
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-dashed border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-400 transition-colors"
-        onClick={() => switchTab('generate')}
-      >
-        <Plus className="w-3 h-3" /> New training
-      </button>
     </div>
   );
 
@@ -215,7 +186,13 @@ export default function Learn() {
       }
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
-        {trainingSwitcher}
+        <TrainingTable
+          rows={tableRows}
+          selectedKey={domainKey}
+          onSelect={handleSelectTraining}
+          onRemove={removeCustomTraining}
+          onNewTraining={() => switchTab('generate')}
+        />
         {tab === 'learn' && (
           <LearningTool
             key={domainKey}
