@@ -19,7 +19,7 @@ interface JobApplication {
   resume_version: 'A' | 'B';
   status: 'sent' | 'opened' | 'replied' | 'rejected' | 'interview';
   source: 'manual' | 'scan' | 'referral';
-  sent_at: string;
+  applied_at: string;
   notes?: string;
 }
 
@@ -75,7 +75,7 @@ export default function Apply() {
           .from('job_applications')
           .select('*')
           .eq('user_id', user!.id)
-          .order('created_at', { ascending: false })
+          .order('applied_at', { ascending: false })
           .limit(50),
         supabase
           .from('scan_runs')
@@ -248,7 +248,7 @@ export default function Apply() {
                       <div className="flex items-center gap-3 text-slate-400 text-xs">
                         <span>{app.company}</span>
                         {app.email && <span>· {app.email}</span>}
-                        <span>· {new Date(app.sent_at).toLocaleDateString()}</span>
+                        <span>· {new Date(app.applied_at).toLocaleDateString()}</span>
                         {app.source === 'scan' && <span className="text-violet-400">· auto-scan</span>}
                       </div>
                     </div>
