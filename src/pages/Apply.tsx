@@ -75,7 +75,7 @@ export default function Apply() {
           .from('job_applications')
           .select('*')
           .eq('user_id', user!.id)
-          .order('sent_at', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(50),
         supabase
           .from('scan_runs')
@@ -85,11 +85,9 @@ export default function Apply() {
           .limit(10),
       ]);
 
+      if (appsResult.data) setApplications(appsResult.data);
+      if (scansResult.data) setScanRuns(scansResult.data);
       if (appsResult.error) throw appsResult.error;
-      if (scansResult.error) throw scansResult.error;
-
-      setApplications(appsResult.data || []);
-      setScanRuns(scansResult.data || []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load data');
     } finally {
@@ -195,7 +193,7 @@ export default function Apply() {
           <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
             <h2 className="text-white font-semibold">Applications</h2>
             <div className="flex gap-2">
-              {['all', 'sent', 'replied', 'interview', 'rejected'].map(f => (
+              {['all', 'sent', 'opened', 'replied', 'interview', 'rejected'].map(f => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
