@@ -180,6 +180,20 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
     }
   }, [focusNodeId, loaded, view, open, onFocusHandled, byId]);
 
+  // BUG-006: Close node modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && active) {
+        setActive(null);
+        setAnswer('');
+        setFeedback(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [active]);
+
+
   const probeLevel = useCallback((id: string) => Math.min(view[id].depth, Math.max(0, view[id].cleared + 1)), [view]);
 
   const route = useCallback((n: typeof nodes[0]) => {
