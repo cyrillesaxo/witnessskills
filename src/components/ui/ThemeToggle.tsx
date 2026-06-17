@@ -28,4 +28,4 @@ export function ThemeToggle() {
                       )}
         </button>
       );
-}</button>
+}
