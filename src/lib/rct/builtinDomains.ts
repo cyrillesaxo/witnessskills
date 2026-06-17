@@ -238,3 +238,81 @@ export const SQL_DOMAIN: Domain = hydrateGenerated({
       negativeKeywords: [], requires: ['sql-aggregates'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 0 },
   ],
 });
+
+// ---------------------------------------------------------------------------
+// Node.js
+// ---------------------------------------------------------------------------
+export const NODEJS_DOMAIN: Domain = hydrateGenerated({
+  name: 'Node.js',
+  root: 'node-event-loop',
+  grounded: true,
+  nodes: [
+    { id: 'node-event-loop', label: 'Event loop & async model',
+      description: 'How Node.js handles I/O with a single-threaded event loop, libuv, and the call stack.',
+      tier: 'Junior', keywords: ['event loop','call stack','libuv','non-blocking','I/O','tick','microtask'],
+      negativeKeywords: ['thread'], requires: [], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 0 },
+    { id: 'node-modules', label: 'Module system (CJS vs ESM)',
+      description: 'CommonJS require() vs ES module import/export; how Node resolves modules.',
+      tier: 'Junior', keywords: ['require','module.exports','import','export','ESM','CommonJS','package.json type'],
+      negativeKeywords: [], requires: ['node-event-loop'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 1, row: 0 },
+    { id: 'node-streams', label: 'Streams & buffers',
+      description: 'Readable/Writable/Transform streams; backpressure; piping; Buffer vs string.',
+      tier: 'Mid', keywords: ['stream','pipe','backpressure','Buffer','Readable','Writable','Transform','chunk'],
+      negativeKeywords: [], requires: ['node-event-loop'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 1 },
+    { id: 'node-http', label: 'HTTP server & middleware',
+      description: 'Creating HTTP servers with http.createServer(); request/response lifecycle; Express middleware pattern.',
+      tier: 'Junior', keywords: ['createServer','req','res','middleware','Express','route','status code','header'],
+      negativeKeywords: [], requires: ['node-modules'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 1, row: 1 },
+    { id: 'node-fs', label: 'File system API',
+      description: 'fs promises API: readFile, writeFile, mkdir, stat; path module; async vs sync variants.',
+      tier: 'Junior', keywords: ['fs','readFile','writeFile','mkdir','path.join','stat','async','promises'],
+      negativeKeywords: [], requires: ['node-event-loop'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 2, row: 0 },
+    { id: 'node-errors', label: 'Error handling & process',
+      description: 'Error-first callbacks; unhandledRejection; process.exit; domains vs try/catch in async code.',
+      tier: 'Mid', keywords: ['unhandledRejection','uncaughtException','process.exit','try/catch','error-first','callback'],
+      negativeKeywords: [], requires: ['node-event-loop'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 2, row: 1 },
+    { id: 'node-cluster', label: 'Cluster & child processes',
+      description: 'cluster module for multi-core; child_process.spawn/fork; worker_threads vs cluster.',
+      tier: 'Senior', keywords: ['cluster','child_process','spawn','fork','worker_threads','IPC','multi-core'],
+      negativeKeywords: [], requires: ['node-event-loop','node-errors'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 1, row: 2 },
+  ],
+});
+
+// ---------------------------------------------------------------------------
+// React
+// ---------------------------------------------------------------------------
+export const REACT_DOMAIN: Domain = hydrateGenerated({
+  name: 'React',
+  root: 'react-component',
+  grounded: true,
+  nodes: [
+    { id: 'react-component', label: 'Component model & JSX',
+      description: 'Function components as pure UI functions; JSX transpilation; props vs children; component tree.',
+      tier: 'Junior', keywords: ['component','JSX','props','children','function component','render','tree'],
+      negativeKeywords: ['class component'], requires: [], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 0 },
+    { id: 'react-state', label: 'State & useState',
+      description: 'Local component state with useState; immutable updates; batched re-renders; state lifting.',
+      tier: 'Junior', keywords: ['useState','state','setState','immutable','re-render','lift state','batching'],
+      negativeKeywords: [], requires: ['react-component'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 1, row: 0 },
+    { id: 'react-effects', label: 'useEffect & lifecycle',
+      description: 'Side effects with useEffect; dependency array; cleanup; when effects run vs render.',
+      tier: 'Junior', keywords: ['useEffect','dependency array','cleanup','mount','unmount','side effect','subscription'],
+      negativeKeywords: [], requires: ['react-state'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 1 },
+    { id: 'react-context', label: 'Context & useContext',
+      description: 'Sharing data across the tree without prop drilling; createContext; Provider; consumer re-renders.',
+      tier: 'Mid', keywords: ['createContext','useContext','Provider','Consumer','prop drilling','re-render'],
+      negativeKeywords: [], requires: ['react-state'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 1, row: 1 },
+    { id: 'react-hooks', label: 'Custom hooks & rules of hooks',
+      description: 'Extracting logic into custom hooks; rules: top-level only, no conditionals; useRef, useMemo, useCallback.',
+      tier: 'Mid', keywords: ['custom hook','useRef','useMemo','useCallback','rules of hooks','memoization'],
+      negativeKeywords: [], requires: ['react-effects','react-context'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 2 },
+    { id: 'react-reconciliation', label: 'Reconciliation & virtual DOM',
+      description: 'Diffing algorithm; key prop importance; fiber architecture; React.memo; when to optimise.',
+      tier: 'Mid', keywords: ['reconciliation','virtual DOM','diffing','key','React.memo','fiber','rerender','optimise'],
+      negativeKeywords: [], requires: ['react-effects'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 1, row: 2 },
+    { id: 'react-patterns', label: 'Advanced patterns',
+      description: 'Compound components, render props, HOCs, controlled vs uncontrolled inputs, Suspense, lazy.',
+      tier: 'Senior', keywords: ['compound component','render prop','HOC','controlled','uncontrolled','Suspense','lazy','portal'],
+      negativeKeywords: [], requires: ['react-hooks','react-reconciliation'], levels: [], eat: { entity: 'concept', action: 'recall', target: 'node' }, col: 0, row: 3 },
+  ],
+});
