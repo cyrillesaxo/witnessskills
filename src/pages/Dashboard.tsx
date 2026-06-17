@@ -16,6 +16,7 @@ import SkillHealthCard from '../components/ui/SkillHealthCard';
 import AchievementsPanel from '../components/ui/AchievementsPanel';
 import { supabase } from '../lib/supabase';
 import { getFlag } from '../lib/flags';
+import { logger } from '../lib/logger';
 import {
     levelToProficiency,
     computeDecayedScore,
@@ -158,12 +159,18 @@ export default function Dashboard() {
                             .limit(5),
                         ]);
                 if (skillsRes.error) throw skillsRes.error;
-                setSkills((skillsRes.data ?? []) as Skill[]);
-                if (!activityRes.error) {
+                const loadedSkills = (skillsRes.data ?? []) as Skill[];
+                setSkills(loadedSkills);
+                logger.info('Dashboard: data loaded', { skillCount: loadedSkills.length, userId: user?.id });
+                if (activityRes.error) {
+                          logger.warn('Dashboard: failed to load recent activity', { userId: user?.id, code: activityRes.error.code }, activityRes.error);
+                } else {
                           setRecentActivity((activityRes.data ?? []) as RecentActivity[]);
                 }
         } catch (e) {
-                setError(e instanceof Error ? e.message : String(e));
+                const msg = e instanceof Error ? e.message : String(e);
+                logger.error('Dashboard: failed to load user data', { userId: user?.id }, e instanceof Error ? e : new Error(msg));
+                setError(msg);
         } finally {
                 setLoading(false);
         }
