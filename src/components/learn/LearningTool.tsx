@@ -373,7 +373,7 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
           <div className="text-5xl font-bold font-mono text-emerald-400">{regimePct}<span className="text-lg">%</span></div>
           <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">convergence</div>
           <div className="text-xs font-mono text-purple-300 mt-2">{STAGES[epistemicStage].name} · stage {epistemicStage + 1}/{STAGES.length}</div>
-          <button onClick={() => setCompressed(c => !c)} className="mt-3 text-xs px-3 py-1.5 bg-teal-500/10 border border-teal-500/30 text-teal-300 rounded-lg hover:bg-teal-500/20">
+          <button onClick={() => setCompressed(c => !c)} title={compressed ? "Expand — show cached node details again" : "Compress mastered — hide already-cleared nodes to reduce visual clutter"} className="mt-3 text-xs px-3 py-1.5 bg-teal-500/10 border border-teal-500/30 text-teal-300 rounded-lg hover:bg-teal-500/20">
             {compressed ? '◇ expand cached' : '◆ compress mastered'}
           </button>
         </div>
