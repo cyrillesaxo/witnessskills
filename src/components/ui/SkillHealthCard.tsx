@@ -53,7 +53,7 @@ function RetentionBar({ pct, urgencyClass }: { pct: number; urgencyClass: string
                           }`}
                           style={{ width: `${pct}%` }}
                         />
-          </div>div>
+          </div>
         );
 }
 
@@ -86,51 +86,51 @@ export default function SkillHealthCard({
                                   <Brain className="w-4 h-4 text-teal-400 flex-shrink-0" />
                                   <span className="text-sm font-semibold text-slate-200 truncate">
                                     {mastery.skillName}
-                                  </span>span>
-                        </div>div>
+                                  </span>
+                        </div>
                         <span
                                     className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${prof.bg} ${prof.color} border-transparent flex-shrink-0`}
                                   >
                           {prof.label}
-                        </span>span>
-                </div>div>
+                        </span>
+                </div>
           
             {/* Mastery score bar */}
                 <div className="mb-3">
                         <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-                                  <span>Mastery</span>span>
-                                  <span>{Math.round(mastery.masteryScore * 100)}%</span>span>
-                        </div>div>
+                                  <span>Mastery</span>
+                                  <span>{Math.round(mastery.masteryScore * 100)}%</span>
+                        </div>
                         <div className="w-full bg-slate-700/50 rounded-full h-1.5">
                                   <div
                                                 className="h-1.5 rounded-full bg-gradient-to-r from-teal-600 to-emerald-400 transition-all duration-500"
                                                 style={{ width: `${Math.round(mastery.masteryScore * 100)}%` }}
                                               />
-                        </div>div>
-                </div>div>
+                        </div>
+                </div>
           
             {/* Retention + trend row */}
                 <div className="flex items-center justify-between mb-3 text-[11px]">
                         <div>
-                                  <span className="text-slate-400">Retention </span>span>
-                                  <span className={urgency + ' font-semibold'}>{retPct}%</span>span>
+                                  <span className="text-slate-400">Retention </span>
+                                  <span className={urgency + ' font-semibold'}>{retPct}%</span>
                                   <RetentionBar pct={retPct} urgencyClass={urgency} />
-                        </div>div>
+                        </div>
                         <div className="flex items-center gap-1">
                                   <TrendIcon trend={mastery.trend} />
                                   <span className={trendColor(mastery.trend) + ' font-medium'}>
                                     {trendLabel(mastery.trend)}
-                                  </span>span>
-                        </div>div>
-                </div>div>
+                                  </span>
+                        </div>
+                </div>
           
             {/* Evidence + streak */}
                 <div className="flex items-center justify-between text-[11px] text-slate-400 mb-3">
-                        <span>🔬 {mastery.evidenceCount} probe{mastery.evidenceCount !== 1 ? 's' : ''}</span>span>
+                        <span>🔬 {mastery.evidenceCount} probe{mastery.evidenceCount !== 1 ? 's' : ''}</span>
                   {mastery.streak > 0 && (
-                            <span className="text-amber-400">🔥 {mastery.streak} streak</span>span>
+                            <span className="text-amber-400">🔥 {mastery.streak} streak</span>
                         )}
-                </div>div>
+                </div>
           
             {/* Review nudge */}
             {sm2Card && (
@@ -146,8 +146,8 @@ export default function SkillHealthCard({
                                       }
                                                 <span className={isOverdue ? 'text-red-300' : 'text-slate-400'}>
                                                   {dueLabel}
-                                                </span>span>
-                                    </div>div>
+                                                </span>
+                                    </div>
                                     <div className="flex items-center gap-1.5">
                                       {onReviewNow && isOverdue && (
                                           <button
@@ -155,7 +155,7 @@ export default function SkillHealthCard({
                                                             className="text-teal-400 hover:text-teal-300 font-medium underline underline-offset-2"
                                                           >
                                                           Review
-                                          </button>button>
+                                          </button>
                                                 )}
                                       {onViewProbe && (
                                           <button
@@ -163,19 +163,19 @@ export default function SkillHealthCard({
                                                             className="text-slate-400 hover:text-slate-300"
                                                           >
                                                           Probe →
-                                          </button>button>
+                                          </button>
                                                 )}
-                                    </div>div>
-                          </div>div>
+                                    </div>
+                          </div>
                 )}
           
             {/* No SM2 card yet — prompt to start */}
             {!sm2Card && mastery.evidenceCount === 0 && (
                           <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
                                     <CheckCircle className="w-3 h-3" />
-                                    <span>No probes yet — start learning to track memory.</span>span>
-                          </div>div>
+                                    <span>No probes yet — start learning to track memory.</span>
+                          </div>
                 )}
-          </div>div>
+          </div>
         );
 }</div>
