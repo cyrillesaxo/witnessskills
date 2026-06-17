@@ -245,6 +245,7 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
     } else {
       const idx = feedback?.awIndex || 0;
       const aw = aws[idx];
+              if (!aw) { setGrading(false); setFeedback({ ok: false, phase: 'anti', graded: 'fallback', msg: 'No antiwitness defined for this node yet — add one to complete this stage.' }); return; }
       const g = await gradeConvergence({
         kind: 'anti',
         anchorKnown: L.anchor.known,
