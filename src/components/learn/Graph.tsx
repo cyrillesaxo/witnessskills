@@ -1,6 +1,4 @@
 import type { OntologyNode, NodeState } from '../../lib/rct/types';
-import { TIER_COLOR } from '../../lib/rct/types';
-
 interface GraphProps {
   nodes: OntologyNode[];
   view: Record<string, NodeState>;
@@ -75,18 +73,16 @@ export default function Graph({ nodes, view, active, compressed, regions, onOpen
 
         return (
           <g key={n.id} className="cursor-pointer" onClick={() => onOpen(n.id)}>
+              <title>{locked ? `🔒 Complete ${n.requires.map(r => byId[r]?.label ?? r).join(', ')} first` : `${n.label}: click to begin`}</title>
             {dueSet.has(n.id) && (
               <rect x={p.x - 86} y={p.y - 40} width={172} height={80} rx={14} fill="none" stroke="#f2a43c" strokeWidth={1.6} className="animate-pulse" />
             )}
             <rect x={p.x - 82} y={p.y - 36} width={164} height={72} rx={11}
               fill={locked ? '#11141d' : '#141925'} stroke={sat ? '#39c2d6' : tc}
               strokeWidth={isActive ? 2.4 : 1.4} opacity={locked ? 0.5 : 1} />
-            <text x={p.x - 72} y={p.y - 18} className="text-[9.5px] font-mono">
-              <tspan fill={tc}>{n.eat.entity}</tspan>
-              <tspan fill="#566179"> · </tspan>
-              <tspan fill="#7d8aa3">{n.eat.action}</tspan>
-              <tspan fill="#4a5468"> → </tspan>
-              <tspan fill="#7d8aa3">{n.eat.target}</tspan>
+            <text x={p.x - 72} y={p.y - 18} className="text-[9.5px] font-mono opacity-60">
+              <tspan fill={tc}>{tier}</tspan>
+              <tspan fill="#637477"> level</tspan>
             </text>
             <text x={p.x - 72} y={p.y + 1} className="fill-slate-100 text-[13px] font-semibold">{n.label}</text>
             {n.levels.map((L, i) => {
