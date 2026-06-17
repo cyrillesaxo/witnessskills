@@ -13,7 +13,7 @@ import Graph from '../components/learn/Graph';
 import GeneratorPanel from '../components/learn/GeneratorPanel';
 import TrainingTable from '../components/learn/TrainingTable';
 import SpacedRepetitionPanel from '../components/learn/SpacedRepetitionPanel';
-import { CoverageAuditor } from '../components/audit/CoverageAuditor';
+import CoverageAuditor from '../components/audit/CoverageAuditor';
 import { supabase } from '../lib/supabase';
 import { getFlag } from '../lib/flags';
 import { GIT_DOMAIN, GRADLE_DOMAIN, DOCKER_DOMAIN, NPM_DOMAIN, TS_DOMAIN, SQL_DOMAIN, NODEJS_DOMAIN, REACT_DOMAIN } from '../lib/rct/builtinDomains';
