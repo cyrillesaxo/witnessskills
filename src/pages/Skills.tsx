@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Brain, Plus, X, ChevronDown, BookOpen, Tag,
   ExternalLink, Loader2, AlertCircle, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
@@ -275,7 +273,13 @@ export default function Skills() {
                   {skill.evidence && (
                     <div className="flex gap-1.5 mt-2">
                       <BookOpen className="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-slate-400 line-clamp-2">{skill.evidence}</p>
+                      <p className="text-xs text-slate-400 line-clamp-2">
+                  {skill.evidence
+                    ? skill.evidence.startsWith('RCT convergence')
+                      ? skill.evidence.replace(/^RCT convergence cleared at \w+ tier\.\s*/, '').slice(0, 120)
+                      : skill.evidence.slice(0, 120) + (skill.evidence.length > 120 ? '…' : '')
+                    : null}
+                </p>
                     </div>
                   )}
 
