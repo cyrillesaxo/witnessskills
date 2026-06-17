@@ -191,8 +191,8 @@ export default function Dashboard() {
                 <AppShell user={user} onSignOut={signOut}>
                           <div className="flex items-center justify-center min-h-64">
                                     <Loader2 className="w-6 h-6 animate-spin text-teal-400" />
-                          </div>div>
-                </AppShell>AppShell>
+                          </div>
+                </AppShell>
               );
   }
   
@@ -203,11 +203,11 @@ export default function Dashboard() {
                   {/* Header */}
                         <div className="flex items-center justify-between">
                                   <div>
-                                              <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>h1>
+                                              <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
                                               <p className="text-sm text-slate-400 mt-0.5">
                                                 {user?.email ?? 'Welcome back'}
-                                              </p>p>
-                                  </div>div>
+                                              </p>
+                                  </div>
                           {dueCount > 0 && (
                         <Link
                                         to="/learn"
@@ -215,16 +215,16 @@ export default function Dashboard() {
                                       >
                                       <Brain className="w-3.5 h-3.5" />
                           {dueCount} review{dueCount !== 1 ? 's' : ''} due
-                        </Link>Link>
+                        </Link>
                                   )}
-                        </div>div>
+                        </div>
                 
                   {/* Error */}
                   {error && (
                       <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         {error}
-                      </div>div>
+                      </div>
                         )}
                 
                   {/* Stats row */}
@@ -233,7 +233,7 @@ export default function Dashboard() {
                                   <StatCard icon={<Star className="w-4 h-4 text-amber-400" />} label="Expert" value={expertCount} />
                                   <StatCard icon={<Trophy className="w-4 h-4 text-purple-400" />} label="Badges" value={earnedCount} />
                                   <StatCard icon={<Zap className="w-4 h-4 text-blue-400" />} label="Reviews due" value={dueCount} alert={dueCount > 0} />
-                        </div>div>
+                        </div>
                 
                   {/* Tabs */}
                   {(flagHealth || flagAchievements) && (
@@ -249,20 +249,20 @@ export default function Dashboard() {
                                                         }`}
                                                       >
                                         {tab.label}
-                                      </button>button>
+                                      </button>
                                     ))}
-                      </div>div>
+                      </div>
                         )}
                 
                   {/* Tab: Overview */}
                   {activeTab === 'overview' && (
                       <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                                <h2 className="text-sm font-semibold text-slate-300">Your Skills</h2>h2>
+                                                <h2 className="text-sm font-semibold text-slate-300">Your Skills</h2>
                                                 <Link to="/skills" className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1">
                                                                 View all <ChevronRight className="w-3 h-3" />
-                                                </Link>Link>
-                                  </div>div>
+                                                </Link>
+                                  </div>
                         {skills.length === 0 ? (
                                       <EmptyState />
                                     ) : (
@@ -274,9 +274,9 @@ export default function Dashboard() {
                                                                                 onOpenGraph={() => setGraphSkill({ name: skill.name, level: skill.level })}
                                                                               />
                                                         ))}
-                                      </div>div>
+                                      </div>
                                   )}
-                      </div>div>
+                      </div>
                         )}
                 
                   {/* Tab: Skill Health */}
@@ -284,7 +284,7 @@ export default function Dashboard() {
                       <div className="space-y-3">
                                   <p className="text-xs text-slate-500">
                                                 Mastery scores, retention estimates, and review nudges powered by spaced repetition.
-                                  </p>p>
+                                  </p>
                         {masteryRecords.length === 0 ? (
                                       <EmptyState />
                                     ) : (
@@ -297,9 +297,9 @@ export default function Dashboard() {
                                                                                 onViewProbe={() => navigate('/learn')}
                                                                               />
                                                         ))}
-                                      </div>div>
+                                      </div>
                                   )}
-                      </div>div>
+                      </div>
                         )}
                 
                   {/* Tab: Achievements */}
@@ -313,8 +313,8 @@ export default function Dashboard() {
                                   <QuickAction to="/challenge" icon={<Zap className="w-4 h-4" />}       label="Challenge"    />
                                   <QuickAction to="/apply/gaps" icon={<Target className="w-4 h-4" />}   label="Gap Analysis" />
                                   <QuickAction to="/apply/resume" icon={<TrendingUp className="w-4 h-4" />} label="Resume" />
-                        </div>div>
-                </div>div>
+                        </div>
+                </div>
           
             {/* Ontology Modal */}
             {graphSkill && (
@@ -324,7 +324,7 @@ export default function Dashboard() {
                                 onClose={() => setGraphSkill(null)}
                               />
                   )}
-          </AppShell>AppShell>
+          </AppShell>
         );
 }
 
@@ -339,10 +339,10 @@ function StatCard({
           <div className={`rounded-xl border p-3 text-center ${
                   alert ? 'bg-red-500/5 border-red-500/20' : 'bg-slate-800/60 border-slate-700/50'
           }`}>
-                <div className="flex items-center justify-center mb-1">{icon}</div>div>
-                <p className={`text-xl font-bold ${alert ? 'text-red-300' : 'text-slate-100'}`}>{value}</p>p>
-                <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>p>
-          </div>div>
+                <div className="flex items-center justify-center mb-1">{icon}</div>
+                <p className={`text-xl font-bold ${alert ? 'text-red-300' : 'text-slate-100'}`}>{value}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>
+          </div>
         );
 }
 
@@ -352,9 +352,9 @@ function QuickAction({ to, icon, label }: { to: string; icon: React.ReactNode; l
                   to={to}
                   className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2.5 hover:border-teal-500/30 hover:bg-teal-500/5 transition-all text-sm text-slate-300 hover:text-slate-100"
                 >
-                <span className="text-teal-400">{icon}</span>span>
+                <span className="text-teal-400">{icon}</span>
             {label}
-          </Link>Link>
+          </Link>
         );
 }
 
@@ -373,27 +373,27 @@ function SkillCard({
     return (
           <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 hover:border-slate-600/70 transition-all group">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                        <p className="text-sm font-medium text-slate-200 truncate">{skill.name}</p>p>
+                        <p className="text-sm font-medium text-slate-200 truncate">{skill.name}</p>
                         <button
                                     onClick={onOpenGraph}
                                     title="View skill ontology graph"
                                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                                   >
                                   <Brain className="w-3.5 h-3.5 text-teal-400 hover:text-teal-300" />
-                        </button>button>
-                </div>div>
+                        </button>
+                </div>
                 <div className="flex items-center gap-2">
                         <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium capitalize ${color}`}>
                           {skill.level}
-                        </span>span>
+                        </span>
                   {skill.domain && (
-                      <span className="text-[11px] text-slate-500 truncate">{skill.domain}</span>span>
+                      <span className="text-[11px] text-slate-500 truncate">{skill.domain}</span>
                         )}
-                </div>div>
+                </div>
             {skill.evidence && (
-                    <p className="text-[11px] text-slate-500 mt-1.5 line-clamp-2">{skill.evidence}</p>p>
+                    <p className="text-[11px] text-slate-500 mt-1.5 line-clamp-2">{skill.evidence}</p>
                 )}
-          </div>div>
+          </div>
         );
 }
 
@@ -401,10 +401,10 @@ function EmptyState() {
     return (
           <div className="text-center py-8 text-slate-500 text-sm">
                 <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p>No skills yet.</p>p>
+                <p>No skills yet.</p>
                 <Link to="/skills" className="text-teal-400 hover:text-teal-300 text-xs mt-1 inline-block">
                         Add your first skill →
-                </Link>Link>
-          </div>div>
+                </Link>
+          </div>
         );
 }</div>
