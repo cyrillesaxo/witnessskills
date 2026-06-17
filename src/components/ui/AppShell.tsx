@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Zap, LogOut, Menu, X, Home, BookOpen, Star, User, Briefcase } from 'lucide-react';
 import BackgroundGlow from './BackgroundGlow';
+import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../../context/useAuth';
+import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
 
 const NAV_LINKS = [
@@ -10,7 +12,6 @@ const NAV_LINKS = [
   { to: '/learn', label: 'Learn', icon: BookOpen },
   { to: '/skills', label: 'Skills', icon: Star },
   { to: '/apply', label: 'Apply', icon: Briefcase },
-
   { to: '/challenge', label: 'Challenge', icon: Zap },
   { to: '/profile', label: 'Profile', icon: User },
 ] as const;
@@ -27,15 +28,15 @@ export default function AppShell({ children, trail, subNav, actions, onSignOut }
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // Keyboard: Escape closes menu, focus trap inside mobile menu
   useEffect(() => {
     if (!menuOpen) return;
     function handleKey(e: KeyboardEvent) {
@@ -57,7 +58,6 @@ export default function AppShell({ children, trail, subNav, actions, onSignOut }
       }
     }
     document.addEventListener('keydown', handleKey);
-    // Focus first nav link when menu opens
     setTimeout(() => {
       menuRef.current?.querySelector<HTMLElement>('a[href], button')?.focus();
     }, 50);
@@ -69,10 +69,31 @@ export default function AppShell({ children, trail, subNav, actions, onSignOut }
     onSignOut?.();
   }
 
+  const navBg   = isDark ? 'bg-slate-950/40 border-slate-800/60' : 'bg-white/90 border-slate-200/80';
+  const logoText = isDark ? 'text-white' : 'text-slate-900';
+  const linkBase = isDark
+    ? 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100';
+  const linkActive = isDark
+    ? 'text-emerald-400 bg-emerald-500/10'
+    : 'text-emerald-600 bg-emerald-50';
+  const mobileMenuBg = isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200';
+  const mobileLinkBase = isDark
+    ? 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100';
+  const mobileLinkActive = isDark
+    ? 'text-emerald-400 bg-emerald-500/10'
+    : 'text-emerald-600 bg-emerald-50';
+  const signOutBtn = isDark
+    ? 'text-slate-400 hover:text-red-400 hover:bg-red-500/10'
+    : 'text-slate-500 hover:text-red-600 hover:bg-red-50';
+  const rootBg = isDark
+    ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'
+    : 'bg-gradient-to-br from-slate-50 via-white to-slate-100';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-x-hidden">
-      <BackgroundGlow />
-      {/* Skip to content — accessibility */}
+    <div className={`min-h-screen ${rootBg} relative overflow-x-hidden`}>
+      {isDark && <BackgroundGlow />}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded-lg focus:text-sm"
@@ -81,133 +102,117 @@ export default function AppShell({ children, trail, subNav, actions, onSignOut }
       </a>
 
       <div className="relative z-10 bg-grid-pattern min-h-screen">
-        {/* Top nav */}
         <nav
-          className="border-b border-slate-800/60 backdrop-blur-xl bg-slate-950/40 sticky top-0 z-50"
+          className={`border-b ${navBg} backdrop-blur-xl sticky top-0 z-50 transition-colors duration-200`}
           role="navigation"
           aria-label="Main navigation"
         >
           <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
-            {/* Logo */}
             <Link to="/" aria-label="WitnessSkills home" className="flex items-center gap-2 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                 <Zap className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
-              <span className="font-bold text-white text-sm hidden sm:block">WitnessSkills</span>
+              <span className={`font-bold text-sm hidden sm:block ${logoText}`}>WitnessSkills</span>
             </Link>
 
-            {/* Breadcrumb trail */}
             {trail && trail.length > 0 && (
-              <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1 text-sm text-slate-500">
+              <nav aria-label="Breadcrumb" className={`hidden sm:flex items-center gap-1 text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 <span aria-hidden="true">/</span>
                 {trail.map((t, i) => (
                   <span key={i} className="flex items-center gap-1">
                     {t.href ? (
-                      <Link to={t.href} className="text-slate-400 hover:text-white transition-colors">{t.label}</Link>
+                      <Link to={t.href} className={`transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>{t.label}</Link>
                     ) : (
-                      <span className="text-slate-300">{t.label}</span>
+                      <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>{t.label}</span>
                     )}
-                    {i < trail.length - 1 && <span aria-hidden="true" className="text-slate-600">/</span>}
+                    {i < trail.length - 1 && <span aria-hidden="true" className={isDark ? 'text-slate-600' : 'text-slate-300'}>/</span>}
                   </span>
                 ))}
               </nav>
             )}
 
-            {/* Sub nav (e.g. Learn tabs) */}
             {subNav && <div className="hidden md:flex">{subNav}</div>}
 
-            {/* Desktop nav links */}
             <div className="hidden md:flex items-center gap-1 ml-auto" role="menubar">
-              {NAV_LINKS.map(({ to, label }) => {
-                const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
+              {NAV_LINKS.map(({ to, label, icon: Icon }) => {
+                const isActive = location.pathname === to;
                 return (
                   <Link
                     key={to}
                     to={to}
                     role="menuitem"
                     aria-current={isActive ? 'page' : undefined}
-                    className={'px-3 py-1.5 rounded-lg text-sm transition-colors ' + (isActive
-                      ? 'text-white bg-slate-800/80'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isActive ? linkActive : linkBase}`}
                   >
+                    <Icon className="w-3.5 h-3.5" aria-hidden="true" />
                     {label}
                   </Link>
                 );
               })}
+              {actions && <div className="ml-1">{actions}</div>}
+              <ThemeToggle />
+              {user && (
+                <button
+                  onClick={handleSignOut}
+                  aria-label="Sign out"
+                  className={`p-2 rounded-lg transition-colors ${signOutBtn}`}
+                >
+                  <LogOut className="w-4 h-4" aria-hidden="true" />
+                </button>
+              )}
             </div>
 
-            {/* Actions slot (e.g. export, add buttons) */}
-            {actions && <div className="hidden sm:flex items-center gap-2 ml-2">{actions}</div>}
-
-            {/* Desktop sign out */}
-            {user && (
+            <div className="flex md:hidden items-center gap-2 ml-auto">
+              <ThemeToggle />
               <button
-                onClick={handleSignOut}
-                aria-label="Sign out"
-                className="hidden md:flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm ml-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1"
+                ref={menuBtnRef}
+                onClick={() => setMenuOpen(v => !v)}
+                aria-expanded={menuOpen}
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                className={`p-2 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/60' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
               >
-                <LogOut className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden lg:block">Sign out</span>
+                {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-            )}
-
-            {/* Mobile hamburger */}
-            <button
-              ref={menuBtnRef}
-              onClick={() => setMenuOpen(o => !o)}
-              aria-expanded={menuOpen}
-              aria-controls="mobile-menu"
-              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              className="md:hidden ml-auto p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              {menuOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
-            </button>
-          </div>
-
-          {/* Mobile menu — slide-in */}
-          {menuOpen && (
-            <div
-              id="mobile-menu"
-              ref={menuRef}
-              role="menu"
-              aria-label="Navigation menu"
-              className="md:hidden border-t border-slate-800/60 bg-slate-950/95 backdrop-blur-xl"
-            >
-              <div className="px-4 py-3 space-y-1">
-                {NAV_LINKS.map(({ to, label, icon: Icon }) => {
-                  const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
-                  return (
-                    <Link
-                      key={to}
-                      to={to}
-                      role="menuitem"
-                      aria-current={isActive ? 'page' : undefined}
-                      className={'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ' + (isActive
-                        ? 'text-white bg-slate-800/80'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50')}
-                    >
-                      <Icon className="w-4 h-4" aria-hidden="true" />
-                      {label}
-                    </Link>
-                  );
-                })}
-                {user && (
-                  <button
-                    onClick={handleSignOut}
-                    role="menuitem"
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" aria-hidden="true" />
-                    Sign out
-                  </button>
-                )}
-              </div>
             </div>
-          )}
+          </div>
         </nav>
 
-        {/* Page content */}
-        <main id="main-content" tabIndex={-1}>
+        {menuOpen && (
+          <div
+            ref={menuRef}
+            className={`md:hidden fixed inset-x-0 top-14 z-40 border-b ${mobileMenuBg} shadow-lg`}
+            role="menu"
+          >
+            <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1">
+              {NAV_LINKS.map(({ to, label, icon: Icon }) => {
+                const isActive = location.pathname === to;
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    role="menuitem"
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? mobileLinkActive : mobileLinkBase}`}
+                  >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    {label}
+                  </Link>
+                );
+              })}
+              {user && (
+                <button
+                  onClick={handleSignOut}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium mt-1 transition-colors ${signOutBtn}`}
+                >
+                  <LogOut className="w-4 h-4" aria-hidden="true" />
+                  Sign out
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6">
           {children}
         </main>
       </div>
