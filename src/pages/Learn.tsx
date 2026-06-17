@@ -191,4 +191,4 @@ export default function Learn() {
                 </div>
           </AppShell>
         );
-}</div>
+}
