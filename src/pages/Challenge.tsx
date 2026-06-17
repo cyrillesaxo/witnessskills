@@ -302,6 +302,18 @@ function PackSelectPhase({ packs, onSelect }: { packs: DomainPack[]; onSelect: (
       <p className="text-sm text-gray-600 mb-6">
         Choose a challenge type. Each turns your existing learning or artifacts into active proof.
       </p>
+      {!loading && packs.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700/40 flex items-center justify-center mb-5">
+            <span className="text-3xl">🏆</span>
+          </div>
+          <h3 className="text-slate-200 font-semibold text-lg mb-2">No challenges yet</h3>
+          <p className="text-slate-400 text-sm max-w-sm mb-6">Challenges are unlocked as you progress through trainings in the Learn tab. Complete at least one training node to get started.</p>
+          <a href="/learn" className="px-5 py-2.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-sm font-semibold hover:bg-emerald-500/30 transition-colors">
+            Go to Learn →
+          </a>
+        </div>
+      )}
       <div className="grid gap-4">
         {packs.map(pack => {
           const Icon = icons[pack.promoted_field_test] ?? Brain;
