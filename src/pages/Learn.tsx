@@ -106,8 +106,8 @@ export default function Learn() {
                 <AppShell user={user} onSignOut={signOut}>
                           <div className="flex items-center justify-center min-h-64">
                                     <Loader2 className="w-6 h-6 animate-spin text-teal-400" />
-                          </div>div>
-                </AppShell>AppShell>
+                          </div>
+                </AppShell>
               );
   }
   
@@ -117,11 +117,11 @@ export default function Learn() {
                 
                   {/* Header */}
                         <div>
-                                  <h1 className="text-2xl font-bold text-slate-100">Learn</h1>h1>
+                                  <h1 className="text-2xl font-bold text-slate-100">Learn</h1>
                                   <p className="text-sm text-slate-400 mt-0.5">
                                               Train on ontology nodes, audit coverage, and review scheduled skills.
-                                  </p>p>
-                        </div>div>
+                                  </p>
+                        </div>
                 
                   {/* Tabs */}
                         <div className="flex gap-1.5 border-b border-slate-700/50 pb-2">
@@ -136,9 +136,9 @@ export default function Learn() {
                                         }`}
                                       >
                           {tab.label}
-                        </button>button>
+                        </button>
                       ))}
-                        </div>div>
+                        </div>
                 
                   {/* ---- Tab: Train ---- */}
                   {activeTab === 'train' && (
@@ -166,9 +166,9 @@ export default function Learn() {
                                                                                 userId={user?.id ?? ''}
                                                                               />
                                                         )}
-                                      </div>div>
+                                      </div>
                                   )}
-                      </div>div>
+                      </div>
                         )}
                 
                   {/* ---- Tab: Audit ---- */}
@@ -181,14 +181,14 @@ export default function Learn() {
                       <div className="space-y-3">
                                   <p className="text-xs text-slate-500">
                                                 SM-2 spaced repetition — rate your recall after each probe to auto-schedule the next review.
-                                  </p>p>
+                                  </p>
                                   <SpacedRepetitionPanel
                                                   skillNames={skills.map(s => ({ id: s.id, name: s.name }))}
                                                 />
-                      </div>div>
+                      </div>
                         )}
                 
-                </div>div>
-          </AppShell>AppShell>
+                </div>
+          </AppShell>
         );
 }</div>
