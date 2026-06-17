@@ -232,8 +232,8 @@ export default function SpacedRepetitionPanel({
                                 className="w-full text-xs text-slate-500 hover:text-slate-400 flex items-center justify-center gap-1 py-2"
                               >
                       {showAll
-                                    ? <><ChevronUp className="w-3 h-3" /> Hide upcoming ({nonDue.length})</>>
-                                    : <><ChevronDown className="w-3 h-3" /> Show upcoming ({nonDue.length})</>>
+                                    ? <><ChevronUp className="w-3 h-3" /> Hide upcoming ({nonDue.length})</>
+                                    : <><ChevronDown className="w-3 h-3" /> Show upcoming ({nonDue.length})</>
                       }
                     </button>
                 )}
