@@ -19,7 +19,7 @@ export const GIT_DOMAIN: Domain = hydrateGenerated({
             known: 'You ran git add then git commit and the file appeared in the repo history.' },
           newCase: 'You edit two files but only git-add one of them, then commit. What ends up in the commit?',
           witness: { prompt: 'Which files are in the commit, and where is the other file?',
-            acceptKeywords: ['staged','index','only','one'], rejectKeywords: ['both','everything'] },
+            acceptKeywords: ['staged','index','only','one'], rejectKeywords: ['both','everything'] },              antiwitness: { mutation: 'You git-add both files and then unstage one with git restore --staged. What does the commit contain?', prompt: 'Which file ends up in the commit?', trap: 'both files', accept: (a) => /one|only|staged|single/.test(a.toLowerCase()) && !/both|two|all/.test(a.toLowerCase()) },
           hints: ['Think about what git add does to the index.', 'The working-tree change is still there — just not staged.'] }
       ]
     },
