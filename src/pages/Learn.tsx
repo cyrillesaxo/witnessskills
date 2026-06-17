@@ -1,7 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Brain, BarChart3, Sparkles } from 'lucide-react';
-import { useAuth } from '../context/useAuth';
+Fix #1+#2: auto-scroll to graph on training selectimport { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
 import LearningTool from '../components/learn/LearningTool';
@@ -128,7 +127,10 @@ export default function Learn() {
     });
     setDomainKey(key);
     switchTab('learn');
+    setTimeout(() => { graphRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
   }, [switchTab]);
+
+  const graphRef = useRef<HTMLDivElement>(null);
 
   const handleSelectTraining = useCallback((key: string) => {
     setDomainKey(key);
@@ -185,7 +187,7 @@ export default function Learn() {
         </span>
       }
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
+      <div ref={graphRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
         <TrainingTable
           rows={tableRows}
           selectedKey={domainKey}
