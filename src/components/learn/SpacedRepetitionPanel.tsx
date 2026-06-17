@@ -246,4 +246,4 @@ export default function SpacedRepetitionPanel({
                 </div>
           </div>
         );
-}</></></div>
+}
