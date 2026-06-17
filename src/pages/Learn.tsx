@@ -1,237 +1,194 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-Fix #1+#2: auto-scroll to graph on training selectimport { useAuth } from '../context/useAuth';
+// WitnessSkills: Learn.tsx
+// Updated to add "Reviews" tab powered by SpacedRepetitionPanel
+// when VITE_FLAG_SPACED_REPETITION is on.
+
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
 import LearningTool from '../components/learn/LearningTool';
-import CoverageAuditor from '../components/audit/CoverageAuditor';
+import Graph from '../components/learn/Graph';
 import GeneratorPanel from '../components/learn/GeneratorPanel';
-import TrainingTable, { type TrainingRow } from '../components/learn/TrainingTable';
-import { DOMAINS } from '../lib/rct/mavenOntology';
-import { hydrateGenerated } from '../lib/rct/domainGenerator';
+import TrainingTable from '../components/learn/TrainingTable';
+import SpacedRepetitionPanel from '../components/learn/SpacedRepetitionPanel';
+import { CoverageAuditor } from '../components/audit/CoverageAuditor';
+import { supabase } from '../lib/supabase';
+import { getFlag } from '../lib/flags';
+import { DOMAINS } from '../lib/rct/builtinDomains';
 import type { Domain } from '../lib/rct/types';
 
-type Tab = 'learn' | 'audit' | 'generate';
+// ---------------------------------------------------------------
+// TYPES
+// ---------------------------------------------------------------
 
-const TABS: { id: Tab; label: string; icon: typeof Brain }[] = [
-  { id: 'learn', label: 'Learn', icon: Brain },
-  { id: 'audit', label: 'Audit', icon: BarChart3 },
-  { id: 'generate', label: 'Generate', icon: Sparkles },
-];
-
-const TAB_STYLES: Record<Tab, string> = {
-  learn: 'text-emerald-400 border-b-2 border-emerald-400',
-  audit: 'text-violet-400 border-b-2 border-violet-400',
-  generate: 'text-amber-400 border-b-2 border-amber-400',
-};
-
-function parseTab(value: string | null): Tab | null {
-  if (value === 'learn' || value === 'audit' || value === 'generate') return value;
-  return null;
+interface SkillRow {
+    id: string;
+    name: string;
+    level: string;
 }
 
-interface StoredTraining {
-  key: string;
-  raw: Parameters<typeof hydrateGenerated>[0];
-}
+type LearnTab = 'train' | 'audit' | 'reviews';
 
-const LS_KEY = 'ws_custom_trainings_v2';
-
-function loadCustomTrainings(): Array<{ key: string; domain: Domain }> {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as StoredTraining[];
-    return parsed.map(({ key, raw: r }) => ({ key, domain: hydrateGenerated(r) }));
-  } catch {
-    return [];
-  }
-}
-
-function saveCustomTrainings(trainings: Array<{ key: string; domain: Domain }>): void {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(trainings.map(({ key, domain: d }) => ({
-      key,
-      raw: { name: d.name, root: d.root, helloPom: d.helloPom ?? null, nodes: d.nodes.map(n => ({
-        id: n.id, label: n.label, description: n.description, tier: n.tier,
-        keywords: n.keywords, negativeKeywords: n.negativeKeywords, prerequisites: n.prerequisites,
-      })) },
-    }))));
-  } catch { /* storage full */ }
-}
+// ---------------------------------------------------------------
+// COMPONENT
+// ---------------------------------------------------------------
 
 export default function Learn() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [tab, setTab] = useState<Tab>(() => parseTab(searchParams.get('tab')) ?? 'learn');
+    useDocumentTitle('Learn');
+    const { user, signOut } = useAuth();
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
-  const [domainKey, setDomainKey] = useState('maven');
-  const [customTrainings, setCustomTrainings] = useState<Array<{ key: string; domain: Domain }>>(
-    () => loadCustomTrainings()
-  );
+  const [skills, setSkills] = useState<SkillRow[]>([]);
+    const [loadingSkills, setLoadingSkills] = useState(true);
 
-  const allDomains: Record<string, Domain> = {
-    ...Object.fromEntries(Object.entries(DOMAINS)),
-    ...Object.fromEntries(customTrainings.map(({ key, domain }) => [key, domain])),
-  };
-  const domain: Domain = allDomains[domainKey] ?? DOMAINS.maven;
+  // Feature flags
+  const flagSR = getFlag('VITE_FLAG_SPACED_REPETITION');
 
-  // Build table rows: built-ins first, then custom
-  const tableRows: TrainingRow[] = [
-    ...Object.entries(DOMAINS).map(([k, d]) => ({ key: k, name: d.name, domain: d, custom: false })),
-    ...customTrainings.map(({ key, domain: d }) => ({ key, name: d.name, domain: d, custom: true })),
-  ];
+  // Tab state — read from ?tab= query param
+  const tabParam = searchParams.get('tab') as LearnTab | null;
+    const [activeTab, setActiveTab] = useState<LearnTab>(
+          tabParam === 'audit' ? 'audit' : tabParam === 'reviews' ? 'reviews' : 'train',
+        );
 
-  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
-  const [generatePrompt, setGeneratePrompt] = useState('');
-
-  useDocumentTitle(tab === 'learn' ? 'Learn' : tab === 'audit' ? 'Audit' : 'Generate');
+  // Training selection state
+  const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
+    const [selectedTraining, setSelectedTraining] = useState<{ domain: Domain; nodeId: string } | null>(null);
+    const graphRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!user) navigate('/login');
+        if (!user) { navigate('/login'); return; }
+        loadSkills();
   }, [user, navigate]);
 
+  // Sync tab to URL
   useEffect(() => {
-    const node = searchParams.get('node');
-    const urlTab = parseTab(searchParams.get('tab'));
-    if (node) {
-      setFocusNodeId(node);
-      setTab('learn');
-    } else if (urlTab) {
-      setTab(urlTab);
-    }
-    const next = new URLSearchParams(searchParams);
-    next.delete('node');
-    next.delete('tab');
-    if (next.toString() !== searchParams.toString()) {
-      setSearchParams(next, { replace: true });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount only
+        if (activeTab !== 'train') {
+                setSearchParams({ tab: activeTab }, { replace: true });
+        } else {
+                setSearchParams({}, { replace: true });
+        }
+  }, [activeTab, setSearchParams]);
 
-  const switchTab = useCallback((id: Tab) => {
-    setTab(id);
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
-      if (id === 'learn') next.delete('tab');
-      else next.set('tab', id);
-      return next;
-    }, { replace: true });
-  }, [setSearchParams]);
+  async function loadSkills() {
+        setLoadingSkills(true);
+        try {
+                const { data } = await supabase
+                  .from('skills')
+                  .select('id, name, level')
+                  .eq('user_id', user!.id)
+                  .order('created_at', { ascending: false });
+                setSkills((data ?? []) as SkillRow[]);
+        } catch {
+                // non-fatal
+        } finally {
+                setLoadingSkills(false);
+        }
+  }
 
-  const handleNewDomain = useCallback((dom: Domain, key: string) => {
-    setCustomTrainings(prev => {
-      const updated = [...prev.filter(t => t.key !== key), { key, domain: dom }];
-      saveCustomTrainings(updated);
-      return updated;
-    });
-    setDomainKey(key);
-    switchTab('learn');
-    setTimeout(() => { graphRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
-  }, [switchTab]);
+  function handleSelectTraining(domain: Domain, nodeId: string) {
+        setSelectedDomain(domain);
+        setSelectedTraining({ domain, nodeId });
+        // Auto-scroll to graph
+      setTimeout(() => graphRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
 
-  const graphRef = useRef<HTMLDivElement>(null);
+  const tabs: { id: LearnTab; label: string; show: boolean }[] = [
+    { id: 'train',   label: 'Train',   show: true },
+    { id: 'audit',   label: 'Audit',   show: true },
+    { id: 'reviews', label: 'Reviews', show: flagSR },
+      ];
 
-  const handleSelectTraining = useCallback((key: string) => {
-    setDomainKey(key);
-    switchTab('learn');
-  }, [switchTab]);
-
-  const removeCustomTraining = useCallback((key: string) => {
-    setCustomTrainings(prev => {
-      const updated = prev.filter(t => t.key !== key);
-      saveCustomTrainings(updated);
-      return updated;
-    });
-    setDomainKey(prev => (prev === key ? 'maven' : prev));
-  }, []);
-
-  const handleTrainNode = useCallback((nodeId: string) => {
-    setFocusNodeId(nodeId);
-    switchTab('learn');
-  }, [switchTab]);
-
-  const handleBuildGap = useCallback((prompt: string) => {
-    setGeneratePrompt(prompt);
-    switchTab('generate');
-  }, [switchTab]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
-  if (!user) return null;
-
-  const tabSwitcher = (
-    <div className="flex items-center gap-1 p-1 bg-slate-800/40 border border-slate-700/40 rounded-xl">
-      {TABS.map(({ id, label, icon: Icon }) => (
-        <button key={id} onClick={() => switchTab(id)}
-          className={'flex items-center gap-1.5 text-sm px-3 py-1 rounded-lg transition-colors ' + (
-            tab === id ? TAB_STYLES[id] : 'text-slate-400 hover:text-slate-200'
-          )}>
-          <Icon className="w-3.5 h-3.5" />{label}
-        </button>
-      ))}
-    </div>
-  );
-
-  return (
-    <AppShell
-      trail={[{ label: 'Dashboard', href: '/' }, { label: 'Learn' }]}
-      subNav={tabSwitcher}
-      onSignOut={handleSignOut}
-      actions={
-        <span className="hidden lg:inline text-xs font-mono text-slate-500">
-          {domain.name}{domain.generated ? ' · generated' : ''}
-        </span>
-      }
-    >
-      <div ref={graphRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-16">
-        <TrainingTable
-          rows={tableRows}
-          selectedKey={domainKey}
-          onSelect={handleSelectTraining}
-          onRemove={removeCustomTraining}
-          onNewTraining={() => switchTab('generate')}
-        />
-        {tab === 'learn' && (
-          domain.nodes.some(n => n.levels && n.levels.length > 0) ? (
-            <LearningTool
-              key={domainKey}
-              domain={domain}
-              domainKey={domainKey}
-              focusNodeId={focusNodeId}
-              onFocusHandled={() => setFocusNodeId(null)}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-              <span className="text-4xl">🚧</span>
-              <p className="text-slate-300 font-medium">{domain.name} training coming soon</p>
-              <p className="text-slate-500 text-sm max-w-sm">
-                This domain is on the roadmap. Use the Generate tab to build a custom training now.
-              </p>
-            </div>
-          )
-        )}
-        {tab === 'audit' && (
-          <CoverageAuditor
-            domain={domain}
-            domainKey={domainKey}
-            onTrainNode={handleTrainNode}
-            onBuildGap={handleBuildGap}
-          />
-        )}
-        {tab === 'generate' && (
-          <GeneratorPanel
-            current={domain}
-            domainKey={domainKey}
-            onLoad={handleNewDomain}
-            initialPrompt={generatePrompt}
-            onPromptConsumed={() => setGeneratePrompt('')}
-          />
-        )}
-      </div>
-    </AppShell>
-  );
-}
+  if (loadingSkills) {
+        return (
+                <AppShell user={user} onSignOut={signOut}>
+                          <div className="flex items-center justify-center min-h-64">
+                                    <Loader2 className="w-6 h-6 animate-spin text-teal-400" />
+                          </div>div>
+                </AppShell>AppShell>
+              );
+  }
+  
+    return (
+          <AppShell user={user} onSignOut={signOut}>
+                <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+                
+                  {/* Header */}
+                        <div>
+                                  <h1 className="text-2xl font-bold text-slate-100">Learn</h1>h1>
+                                  <p className="text-sm text-slate-400 mt-0.5">
+                                              Train on ontology nodes, audit coverage, and review scheduled skills.
+                                  </p>p>
+                        </div>div>
+                
+                  {/* Tabs */}
+                        <div className="flex gap-1.5 border-b border-slate-700/50 pb-2">
+                          {tabs.filter(t => t.show).map(tab => (
+                        <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`text-sm px-4 py-1.5 rounded-lg transition-all ${
+                                                          activeTab === tab.id
+                                                            ? 'bg-teal-600/20 text-teal-300 border border-teal-500/30'
+                                                            : 'text-slate-400 hover:text-slate-300'
+                                        }`}
+                                      >
+                          {tab.label}
+                        </button>button>
+                      ))}
+                        </div>div>
+                
+                  {/* ---- Tab: Train ---- */}
+                  {activeTab === 'train' && (
+                      <div className="space-y-6">
+                        {/* Generator + training table */}
+                                  <GeneratorPanel skills={skills} onSelect={handleSelectTraining} />
+                      
+                                  <TrainingTable
+                                                  domains={DOMAINS}
+                                                  onSelect={handleSelectTraining}
+                                                />
+                      
+                        {/* Graph + LearningTool */}
+                        {selectedDomain && (
+                                      <div ref={graphRef} className="space-y-4">
+                                                      <Graph
+                                                                          domain={selectedDomain}
+                                                                          selectedNodeId={selectedTraining?.nodeId ?? null}
+                                                                          onSelectNode={nodeId => setSelectedTraining({ domain: selectedDomain, nodeId })}
+                                                                        />
+                                        {selectedTraining && (
+                                                          <LearningTool
+                                                                                domain={selectedTraining.domain}
+                                                                                nodeId={selectedTraining.nodeId}
+                                                                                userId={user?.id ?? ''}
+                                                                              />
+                                                        )}
+                                      </div>div>
+                                  )}
+                      </div>div>
+                        )}
+                
+                  {/* ---- Tab: Audit ---- */}
+                  {activeTab === 'audit' && (
+                      <CoverageAuditor userId={user?.id ?? ''} />
+                    )}
+                
+                  {/* ---- Tab: Reviews (Spaced Repetition) ---- */}
+                  {activeTab === 'reviews' && flagSR && (
+                      <div className="space-y-3">
+                                  <p className="text-xs text-slate-500">
+                                                SM-2 spaced repetition — rate your recall after each probe to auto-schedule the next review.
+                                  </p>p>
+                                  <SpacedRepetitionPanel
+                                                  skillNames={skills.map(s => ({ id: s.id, name: s.name }))}
+                                                />
+                      </div>div>
+                        )}
+                
+                </div>div>
+          </AppShell>AppShell>
+        );
+}</div>
