@@ -1,4 +1,4 @@
-import { GIT_DOMAIN, GRADLE_DOMAIN, DOCKER_DOMAIN, NPM_DOMAIN, TS_DOMAIN, SQL_DOMAIN } from './builtinDomains';
+import { GIT_DOMAIN, GRADLE_DOMAIN, DOCKER_DOMAIN, NPM_DOMAIN, TS_DOMAIN, SQL_DOMAIN, NODEJS_DOMAIN, REACT_DOMAIN } from './builtinDomains';
 import { hasAny } from './utils';
 import type { Domain, OntologyNode } from './types';
 
@@ -396,4 +396,6 @@ export const DOMAINS: Record<string, Domain> = {
   npm: NPM_DOMAIN,
   typescript: TS_DOMAIN,
   sql: SQL_DOMAIN,
+  nodejs: NODEJS_DOMAIN,
+  react: REACT_DOMAIN,
 };
