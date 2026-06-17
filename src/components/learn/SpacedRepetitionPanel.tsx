@@ -39,7 +39,7 @@ interface QualityPickerProps {
 function QualityPicker({ onSelect }: QualityPickerProps) {
     return (
           <div className="mt-3">
-                <p className="text-xs text-slate-400 mb-2 text-center">How well did you recall this skill?</p>p>
+                <p className="text-xs text-slate-400 mb-2 text-center">How well did you recall this skill?</p>
                 <div className="flex gap-1.5 justify-center flex-wrap">
                   {QUALITY_OPTIONS.map(({ q, label, desc, color }) => (
                       <button
@@ -49,11 +49,11 @@ function QualityPicker({ onSelect }: QualityPickerProps) {
                                     className={`w-10 h-10 rounded-lg text-sm font-bold text-white transition-all ${color} flex flex-col items-center justify-center`}
                                   >
                         {label}
-                      </button>button>
+                      </button>
                     ))}
-                </div>div>
-                <p className="text-[10px] text-slate-500 mt-1 text-center">0 = blackout &rarr; 5 = perfect</p>p>
-          </div>div>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 text-center">0 = blackout &rarr; 5 = perfect</p>
+          </div>
         );
 }
 
@@ -90,47 +90,47 @@ function CardRow({ card, onReview }: CardRowProps) {
                                         ? <AlertTriangle className="w-4 h-4 text-red-400" />
                                         : <Brain className="w-4 h-4 text-teal-400" />
                           }
-                        </div>div>
+                        </div>
                 
                   {/* Name + due */}
                         <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-slate-200 truncate">{card.skillName}</p>p>
-                                  <p className={`text-[11px] ${urgency}`}>{dueLabel}</p>p>
-                        </div>div>
+                                  <p className="text-sm font-medium text-slate-200 truncate">{card.skillName}</p>
+                                  <p className={`text-[11px] ${urgency}`}>{dueLabel}</p>
+                        </div>
                 
                   {/* Retention bar */}
                         <div className="w-16 flex-shrink-0">
                                   <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
-                                              <span>Ret.</span>span>
-                                              <span className={urgency}>{live}%</span>span>
-                                  </div>div>
+                                              <span>Ret.</span>
+                                              <span className={urgency}>{live}%</span>
+                                  </div>
                                   <div className="w-full bg-slate-700/50 rounded-full h-1">
                                               <div
                                                               className={`h-1 rounded-full ${live >= 65 ? 'bg-teal-500' : live >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
                                                               style={{ width: `${live}%` }}
                                                             />
-                                  </div>div>
-                        </div>div>
+                                  </div>
+                        </div>
                 
                   {/* Interval */}
                         <div className="flex-shrink-0 text-center hidden sm:block">
-                                  <p className="text-[10px] text-slate-500">Interval</p>p>
-                                  <p className="text-xs text-slate-300">{card.intervalDays}d</p>p>
-                        </div>div>
+                                  <p className="text-[10px] text-slate-500">Interval</p>
+                                  <p className="text-xs text-slate-300">{card.intervalDays}d</p>
+                        </div>
                 
                   {/* Expand */}
                         <div className="flex-shrink-0 text-slate-500">
                           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </div>div>
-                </div>div>
+                        </div>
+                </div>
           
             {/* Quality picker */}
             {expanded && (
                     <div className="px-4 pb-4 border-t border-slate-700/30">
                               <QualityPicker onSelect={q => { onReview(card, q); setExpanded(false); }} />
-                    </div>div>
+                    </div>
                 )}
-          </div>div>
+          </div>
         );
 }
 
@@ -189,36 +189,36 @@ export default function SpacedRepetitionPanel({
             {/* Header stats */}
                 <div className="grid grid-cols-3 gap-3">
                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 text-center">
-                                  <p className="text-2xl font-bold text-red-400">{due.length}</p>p>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">Due now</p>p>
-                        </div>div>
+                                  <p className="text-2xl font-bold text-red-400">{due.length}</p>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">Due now</p>
+                        </div>
                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 text-center">
-                                  <p className="text-2xl font-bold text-teal-400">{cards.length}</p>p>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">Tracked skills</p>p>
-                        </div>div>
+                                  <p className="text-2xl font-bold text-teal-400">{cards.length}</p>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">Tracked skills</p>
+                        </div>
                         <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-3 text-center">
-                                  <p className="text-2xl font-bold text-slate-200">{avgRetention}%</p>p>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">Avg retention</p>p>
-                        </div>div>
-                </div>div>
+                                  <p className="text-2xl font-bold text-slate-200">{avgRetention}%</p>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">Avg retention</p>
+                        </div>
+                </div>
           
             {/* Success toast */}
             {lastReviewed && (
                     <div className="flex items-center gap-2 text-sm text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-xl px-3 py-2 animate-pulse">
                               <CheckCircle className="w-4 h-4" />
-                              <span>Reviewed <strong>{lastReviewed}</strong>strong> — next interval updated.</span>span>
-                    </div>div>
+                              <span>Reviewed <strong>{lastReviewed}</strong> — next interval updated.</span>
+                    </div>
                 )}
           
             {/* Cards */}
             {shown.length === 0 && due.length === 0 && (
                     <div className="text-center py-8 text-slate-500 text-sm">
                               <Brain className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                              <p>All caught up! No reviews due right now.</p>p>
+                              <p>All caught up! No reviews due right now.</p>
                       {cards.length === 0 && skillNames.length === 0 && (
-                                  <p className="text-xs mt-1">Add skills to your portfolio to start tracking.</p>p>
+                                  <p className="text-xs mt-1">Add skills to your portfolio to start tracking.</p>
                               )}
-                    </div>div>
+                    </div>
                 )}
           
             {shown.map(card => (
@@ -235,15 +235,15 @@ export default function SpacedRepetitionPanel({
                                     ? <><ChevronUp className="w-3 h-3" /> Hide upcoming ({nonDue.length})</>>
                                     : <><ChevronDown className="w-3 h-3" /> Show upcoming ({nonDue.length})</>>
                       }
-                    </button>button>
+                    </button>
                 )}
           
             {/* Legend */}
                 <div className="flex items-center gap-4 text-[10px] text-slate-600 justify-center pt-1">
-                        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-teal-500" /> SM-2 algorithm</span>span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Ebbinghaus curve</span>span>
-                        <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Auto-schedules</span>span>
-                </div>div>
-          </div>div>
+                        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-teal-500" /> SM-2 algorithm</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Ebbinghaus curve</span>
+                        <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> Auto-schedules</span>
+                </div>
+          </div>
         );
 }</></></div>
