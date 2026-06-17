@@ -124,7 +124,7 @@ export default function Probe({
         ) : aw ? (
           <>
             <div className="font-mono text-[10.5px] uppercase tracking-wider text-amber-400 mb-2">
-              The artifact mutates{aws.length > 1 ? ` · ${awIdx + 1} of ${aws.length}` : ''}
+              ✅ Convergence reached — now survive the mutation{aws.length > 1 ? ` · ${awIdx + 1} of ${aws.length}` : ''}
             </div>
             <p className="text-sm text-amber-200/90 bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mb-3">{aw.mutation}</p>
             <p className="text-base text-white font-medium mb-2">{aw.prompt}</p>
