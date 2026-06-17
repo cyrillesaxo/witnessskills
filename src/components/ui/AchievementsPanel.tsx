@@ -33,16 +33,16 @@ function BadgeCard({ achievement }: BadgeCardProps) {
           {!isEarned && (
                         <div className="absolute top-2 right-2">
                                   <Lock className="w-3 h-3 text-slate-600" />
-                        </div>div>
+                        </div>
               )}
         
           {/* Icon */}
-              <div className="text-2xl mb-1.5 text-center">{achievement.icon}</div>div>
+              <div className="text-2xl mb-1.5 text-center">{achievement.icon}</div>
         
           {/* Title */}
               <p className="text-xs font-semibold text-slate-200 text-center truncate">
                 {achievement.title}
-              </p>p>
+              </p>
         
           {/* Rarity tag */}
               <p className={`text-[10px] text-center mt-0.5 ${
@@ -52,7 +52,7 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                         'text-slate-500'
               }`}>
                 {label}
-              </p>p>
+              </p>
         
           {/* Progress bar if not earned */}
           {!isEarned && achievement.progress < 100 && (
@@ -62,18 +62,18 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                                                               className="h-1 rounded-full bg-teal-600 transition-all duration-500"
                                                               style={{ width: `${achievement.progress}%` }}
                                                             />
-                                  </div>div>
-                                  <p className="text-[10px] text-slate-500 text-center mt-0.5">{achievement.progress}%</p>p>
-                        </div>div>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 text-center mt-0.5">{achievement.progress}%</p>
+                        </div>
               )}
         
           {/* Earned date */}
           {isEarned && achievement.earnedAt && (
                         <p className="text-[10px] text-teal-400 text-center mt-1">
                           {new Date(achievement.earnedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        </p>p>
+                        </p>
               )}
-        </div>div>
+        </div>
       );
 }
 
@@ -115,10 +115,10 @@ export default function AchievementsPanel({
                                   <Trophy className="w-4 h-4 text-amber-400" />
                                   <span className="text-sm font-semibold text-slate-200">
                                     {earnedCount} / {totalCount} earned
-                                  </span>span>
-                        </div>div>
-                        <span className="text-xs text-slate-400">{overallPct}% complete</span>span>
-                </div>div>
+                                  </span>
+                        </div>
+                        <span className="text-xs text-slate-400">{overallPct}% complete</span>
+                </div>
           
             {/* Overall progress bar */}
                 <div className="w-full bg-slate-700/50 rounded-full h-1.5">
@@ -126,7 +126,7 @@ export default function AchievementsPanel({
                                     className="h-1.5 rounded-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500"
                                     style={{ width: `${overallPct}%` }}
                                   />
-                </div>div>
+                </div>
           
             {/* Tab filters */}
                 <div className="flex gap-1.5">
@@ -141,15 +141,15 @@ export default function AchievementsPanel({
                                     }`}
                                   >
                         {tab}
-                      </button>button>
+                      </button>
                     ))}
                         <button
                                     onClick={() => setShowRarityFilter(s => !s)}
                                     className="ml-auto text-xs px-2 py-1.5 rounded-lg bg-slate-800/60 text-slate-400 hover:text-slate-300 border border-slate-700/50 flex items-center gap-1"
                                   >
                                   Rarity {showRarityFilter ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        </button>button>
-                </div>div>
+                        </button>
+                </div>
           
             {/* Rarity filter */}
             {showRarityFilter && (
@@ -165,23 +165,23 @@ export default function AchievementsPanel({
                                                   }`}
                                                 >
                                     {r}
-                                  </button>button>
+                                  </button>
                                 ))}
-                    </div>div>
+                    </div>
                 )}
           
             {/* Grid */}
             {filtered.length === 0 ? (
                     <div className="text-center py-6 text-slate-500 text-sm">
                               No achievements match this filter.
-                    </div>div>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
                       {filtered.map(a => (
                                   <BadgeCard key={a.id} achievement={a} />
                                 ))}
-                    </div>div>
+                    </div>
                 )}
-          </div>div>
+          </div>
         );
 }</div>
