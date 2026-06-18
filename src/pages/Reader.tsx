@@ -179,16 +179,16 @@ export default function Reader() {
                                                                                        {statusIcon}
                                                                                        {packSpec.status}
                                                                                        </span>
-                                                                                   <span>iter <strong>{packSpec.iteration}</strong>strong></span>
-                                                                                   <span>H_total <strong>{packSpec.H_total.toFixed(1)}</strong>strong> bits</span>
-                                                                                   <span>L_t <strong>{packSpec.L_t_min.toFixed(2)}</strong>strong></span>
+                                                                                   <span>iter <strong>{packSpec.iteration}</strong></span>
+                                                                                   <span>H_total <strong>{packSpec.H_total.toFixed(1)}</strong> bits</span>
+                                                                                   <span>L_t <strong>{packSpec.L_t_min.toFixed(2)}</strong></span>
                                                                        {packSpec.admitted.length > 0 && (
                                                                                          <span className="text-emerald-600">✓ {packSpec.admitted.join(', ')}</span>
                                                                                    )}
                                                                        {lastEvent && (
                                                                                          <span className="text-slate-400 italic">last: {lastEvent}</span>
                                                                                    )}
-                                                                   </>>
+                                                                   </>
                                                                  ) : (
                                                                    <span className="text-slate-400 italic">
                                                                        {skillId ? 'Loading…' : 'Open from a skill card to track convergence'}
