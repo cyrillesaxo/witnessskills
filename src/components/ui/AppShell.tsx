@@ -213,7 +213,7 @@ export default function AppShell({ children, trail, subNav, actions, onSignOut }
           </div>
         )}
 
-        <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6">
+        <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 pt-6 pb-12">
           {children}
         </main>
       </div>
