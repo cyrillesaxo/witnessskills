@@ -12,7 +12,7 @@ import { supabase } from '../lib/supabase';
  *
  * PackSpec integration:
  *   - Listens for postMessage events from the regimeReader iframe
- *   - On each graded session event (verdict), POSTs to /.netlify/functions/packspec
+ *   - On each graded session event (verdict), POSTs to /.hnetlify/functions/packspec
  *   - Displays live PackSpec convergence state (H_total, status, admitted moves)
  *
  * URL params:
@@ -162,39 +162,39 @@ export default function Reader() {
                                                  <div className={`mx-4 mt-4 px-4 py-3 rounded-xl border text-sm flex items-start gap-3 ${colorMap[meta.color]}`}>
                                                                  <BookOpen className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                                                                  <div>
-                                                                               <span className="font-semibold">{meta.move} · {meta.label}</span>span>
-                                                                               <span className="ml-2 opacity-80">{meta.description}</span>span>
-                                                                               <span className="ml-2 opacity-60 text-xs">Practice this location in the reader below.</span>span>
-                                                                 </div>div>
-                                                 </div>div>
+                                                                               <span className="font-semibold">{meta.move} · {meta.label}</span>
+                                                                               <span className="ml-2 opacity-80">{meta.description}</span>
+                                                                               <span className="ml-2 opacity-60 text-xs">Practice this location in the reader below.</span>
+                                                                 </div>
+                                                 </div>
                             )}
                     
                         {/* ── PackSpec convergence HUD ─────────────────────────────── */}
                         {skillId && (
                                                  <div className="mx-4 mt-3 px-4 py-2 rounded-lg bg-white border border-slate-200 flex items-center gap-4 text-xs text-slate-600 flex-wrap">
-                                                             <span className="font-medium text-slate-700">PackSpec</span>span>
+                                                             <span className="font-medium text-slate-700">PackSpec</span>
                                                      {packSpec ? (
                                                                    <>
                                                                                    <span className={`flex items-center gap-1 font-medium ${statusColor}`}>
                                                                                        {statusIcon}
                                                                                        {packSpec.status}
-                                                                                       </span>span>
-                                                                                   <span>iter <strong>{packSpec.iteration}</strong>strong></span>span>
-                                                                                   <span>H_total <strong>{packSpec.H_total.toFixed(1)}</strong>strong> bits</span>span>
-                                                                                   <span>L_t <strong>{packSpec.L_t_min.toFixed(2)}</strong>strong></span>span>
+                                                                                       </span>
+                                                                                   <span>iter <strong>{packSpec.iteration}</strong>strong></span>
+                                                                                   <span>H_total <strong>{packSpec.H_total.toFixed(1)}</strong>strong> bits</span>
+                                                                                   <span>L_t <strong>{packSpec.L_t_min.toFixed(2)}</strong>strong></span>
                                                                        {packSpec.admitted.length > 0 && (
-                                                                                         <span className="text-emerald-600">✓ {packSpec.admitted.join(', ')}</span>span>
+                                                                                         <span className="text-emerald-600">✓ {packSpec.admitted.join(', ')}</span>
                                                                                    )}
                                                                        {lastEvent && (
-                                                                                         <span className="text-slate-400 italic">last: {lastEvent}</span>span>
+                                                                                         <span className="text-slate-400 italic">last: {lastEvent}</span>
                                                                                    )}
                                                                    </>>
                                                                  ) : (
                                                                    <span className="text-slate-400 italic">
                                                                        {skillId ? 'Loading…' : 'Open from a skill card to track convergence'}
-                                                                   </span>span>
+                                                                   </span>
                                                              )}
-                                                 </div>div>
+                                                 </div>
                             )}
                     
                         {/* ── Open-in-new-tab escape hatch ─────────────────────────── */}
@@ -204,7 +204,7 @@ export default function Reader() {
                                                        className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-emerald-600 transition-colors">
                                                   Open full screen <ExternalLink className="w-3 h-3" aria-hidden="true" />
                                       </a>a>
-                            </div>div>
+                            </div>
                     
                         {/* ── regimeReader iframe ───────────────────────────────────── */}
                             <iframe
