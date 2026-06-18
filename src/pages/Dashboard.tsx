@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
         Brain, Target, TrendingUp, Award, ChevronRight,
-        Loader2, AlertCircle, Zap, Trophy, Star,
+        Loader2, AlertCircle, Zap, Trophy, Star, PlayCircle, Clock,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -34,6 +34,10 @@ import {
         type Achievement,
         type AchievementContext,
 } from '../lib/achievements';
+import { DOMAINS } from '../lib/rct/mavenOntology';
+import { getDueSummary, getLearnProgress } from '../lib/rct/learnProgress';
+import { storageKeyFor } from '../lib/rct/utils';
+import type { NodeState } from '../lib/rct/types';
 
 // ---------------------------------------------------------------
 // TYPES
@@ -88,6 +92,76 @@ function buildMasteryRecord(skill: Skill): SkillMasteryRecord {
                 retentionPct: Math.round(masteryScore * 100),
                 trend: 'STABLE',
     };
+}
+
+// ---------------------------------------------------------------
+// NEXT NODES HELPER
+// ---------------------------------------------------------------
+
+interface NextNode {
+  id: string;
+  label: string;
+  status: 'due' | 'unlocked' | 'locked';
+  tierLabel: string;
+}
+
+function getNextNodes(limit = 4): NextNode[] {
+  const domain = DOMAINS.maven;
+  const nodes = domain.nodes;
+  const due = getDueSummary('maven', nodes);
+  const dueSet = new Set(due.labels);
+
+  let nodeState: Record<string, NodeState> = {};
+  try {
+    const raw = localStorage.getItem(storageKeyFor('maven'));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      nodeState = parsed.__nodes || parsed;
+    }
+  } catch { /* ignore */ }
+
+  const result: NextNode[] = [];
+
+  // Due for review first
+  for (const n of nodes) {
+    if (result.length >= limit) break;
+    if (dueSet.has(n.label)) {
+      const st = nodeState[n.id];
+      const lvl = Math.min((st?.depth ?? 0), n.levels.length - 1);
+      result.push({ id: n.id, label: n.label, status: 'due', tierLabel: n.levels[lvl].tier });
+    }
+  }
+
+  // Then unlocked but not yet cleared
+  for (const n of nodes) {
+    if (result.length >= limit) break;
+    if (dueSet.has(n.label)) continue;
+    const st = nodeState[n.id];
+    if (!st) {
+      // Not started — check if all requires are cleared
+      const prereqsMet = n.requires.every(req => {
+        const rst = nodeState[req];
+        return rst && rst.cleared >= 0;
+      });
+      if (prereqsMet) {
+        const lvl = 0;
+        result.push({ id: n.id, label: n.label, status: 'unlocked', tierLabel: n.levels[lvl].tier });
+      }
+    } else if (st.cleared < 0 && st.unlocked) {
+      const lvl = Math.min(st.depth, n.levels.length - 1);
+      result.push({ id: n.id, label: n.label, status: 'unlocked', tierLabel: n.levels[lvl].tier });
+    }
+  }
+
+  // Fill with first unstarted nodes regardless of lock state
+  for (const n of nodes) {
+    if (result.length >= limit) break;
+    if (result.find(r => r.id === n.id)) continue;
+    const lvl = 0;
+    result.push({ id: n.id, label: n.label, status: 'locked', tierLabel: n.levels[lvl].tier });
+  }
+
+  return result.slice(0, limit);
 }
 
 // ---------------------------------------------------------------
@@ -290,7 +364,59 @@ export default function Dashboard() {
                                     </Link>
                                 );
         }
-    
+
+        function NextToTrain() {
+                    const progress = getLearnProgress('maven', DOMAINS.maven.nodes);
+                    const nextNodes = getNextNodes(4);
+                    const tierColor: Record<string, string> = { Junior: 'text-emerald-400', Mid: 'text-amber-400', Senior: 'text-red-400' };
+                    const statusConfig = {
+                                    due:      { icon: <Clock className="w-3 h-3 text-amber-400" />, label: 'Due for review',  ring: 'border-amber-500/30 bg-amber-500/5'  },
+                                    unlocked: { icon: <PlayCircle className="w-3 h-3 text-teal-400" />, label: 'Ready to train', ring: 'border-teal-500/30 bg-teal-500/5'   },
+                                    locked:   { icon: <Brain className="w-3 h-3 text-slate-500" />,    label: 'Locked',         ring: 'border-slate-700/50 bg-slate-800/30' },
+                    };
+                    return (
+                                    <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                                        <div>
+                                                                                            <h2 className="text-sm font-semibold text-slate-200">Next to train</h2>
+                                                                                            <p className="text-[11px] text-slate-500 mt-0.5">
+                                                                                                {progress.cleared} of {progress.total} levels cleared · Maven domain
+                                                                                            </p>
+                                                                        </div>
+                                                                        <Link to="/learn" className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1 flex-shrink-0">
+                                                                                            Open trainer <ChevronRight className="w-3 h-3" />
+                                                                        </Link>
+                                                    </div>
+                                        {/* Progress bar */}
+                                                    <div className="w-full bg-slate-700/50 rounded-full h-1 mb-3">
+                                                                        <div
+                                                                                                    className="h-1 rounded-full bg-gradient-to-r from-teal-600 to-emerald-400 transition-all duration-500"
+                                                                                                    style={{ width: `${progress.total ? Math.round((progress.cleared / progress.total) * 100) : 0}%` }}
+                                                                                                />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                        {nextNodes.map(n => {
+                                                                                        const cfg = statusConfig[n.status];
+                                                                                        return (
+                                                                                                            <Link
+                                                                                                                                                key={n.id}
+                                                                                                                                                to={`/learn?node=${encodeURIComponent(n.id)}`}
+                                                                                                                                                className={`flex flex-col gap-1.5 p-2.5 rounded-lg border transition-all hover:scale-[1.02] ${cfg.ring}`}
+                                                                                                                                            >
+                                                                                                                                <div className="flex items-center gap-1.5">
+                                                                                                                                    {cfg.icon}
+                                                                                                                                    <span className={`text-[9.5px] font-mono font-semibold ${tierColor[n.tierLabel] ?? 'text-slate-400'}`}>{n.tierLabel}</span>
+                                                                                                                                </div>
+                                                                                                                                <p className="text-xs font-medium text-slate-200 leading-tight truncate">{n.label}</p>
+                                                                                                                                <p className="text-[10px] text-slate-500">{cfg.label}</p>
+                                                                                                                            </Link>
+                                                                                                                        );
+                                                                                    })}
+                                                    </div>
+                                    </div>
+                                );
+        }
+
         // ---------------------------------------------------------------
         // RENDER
         // ---------------------------------------------------------------
@@ -345,6 +471,10 @@ export default function Dashboard() {
                                     {/* Tab: Overview */}
                                     {activeTab === 'overview' && (
                                             <div className="space-y-4">
+
+                                                {/* Next to train widget */}
+                                                <NextToTrain />
+
                                                                     <div className="flex items-center justify-between">
                                                                                                     <h2 className="text-sm font-semibold text-slate-300">Your Skills</h2>
                                                                                                     <Link to="/skills" className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1">

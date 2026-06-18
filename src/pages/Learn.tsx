@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
+import OnboardingModal, { hasOnboarded } from '../components/ui/OnboardingModal';
 import LearningTool from '../components/learn/LearningTool';
 import GeneratorPanel from '../components/learn/GeneratorPanel';
 import TrainingTable, { type TrainingRow } from '../components/learn/TrainingTable';
@@ -79,6 +80,7 @@ export default function Learn() {
 
   const [skills, setSkills] = useState<SkillRow[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Feature flags
   const flagSR = getFlag('VITE_FLAG_SPACED_REPETITION');
@@ -105,6 +107,7 @@ export default function Learn() {
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
     loadSkills();
+    if (!hasOnboarded()) setShowOnboarding(true);
   }, [user, navigate]);
 
   // Sync tab to URL
@@ -169,6 +172,7 @@ export default function Learn() {
   }
 
   return (
+    <>
     <AppShell onSignOut={signOut}>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
@@ -247,5 +251,10 @@ export default function Learn() {
 
       </div>
     </AppShell>
+
+    {showOnboarding && (
+      <OnboardingModal onStart={() => setShowOnboarding(false)} />
+    )}
+    </>
   );
 }
