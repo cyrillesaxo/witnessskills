@@ -17,6 +17,25 @@ const LEVEL_STYLES: Record<Level, string> = {
   expert: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
 };
 
+/** Maps skill tags / names → regimeReader defeater-location slugs */
+const RCT_LOCATIONS: Record<string, string> = {
+    depth: 'depth', dig: 'depth',
+    breadth: 'breadth', compare: 'breadth',
+    channel: 'channel', separate: 'channel',
+    frame: 'frame',
+    implicature: 'implicature', parse: 'implicature',
+};
+
+/** Return the first matching RCT location slug from a skill's tags, or null */
+function rctLocation(tags: string[] | null): string | null {
+    if (!tags) return null;
+    for (const t of tags) {
+          const slug = RCT_LOCATIONS[t.toLowerCase().trim()];
+          if (slug) return slug;
+    }
+    return null;
+}
+
 interface Skill {
   id: string;
   name: string;
@@ -266,6 +285,17 @@ export default function Skills() {
                         <X className="w-4 h-4" />
                       </button>
                     </div>
+                    {/* Practice in Reader — shown when skill tags a defeater location */}
+                    {(() => { const loc = rctLocation(skill.tags); return loc ? (
+                                  <Link
+                                                      to={`/reader?skill=${loc}`}
+                                                      className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                                                      title={`Practice ${loc} in Regime Reader`}
+                                                    >
+                                                    <BookOpen className="w-3 h-3" aria-hidden="true" />
+                                                    Practice in Reader
+                                  </Link>Link>
+                                ) : null; })()}</Link>
                   </div>
 
                   {/* Evidence */}
