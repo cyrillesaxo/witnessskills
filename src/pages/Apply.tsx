@@ -40,7 +40,7 @@ const STATUS_CONFIG = {
 } as const;
 
 export default function Apply() {
-  useDocumentTitle('Apply · WitnessSkills');
+  useDocumentTitle('Apply');
   const { user } = useAuth();
 
   const [applications, setApplications] = useState<JobApplication[]>([]);

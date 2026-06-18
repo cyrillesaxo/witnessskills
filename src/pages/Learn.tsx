@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
@@ -47,7 +47,7 @@ function AuditTab() {
   const [key, domain] = domainEntries[idx];
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap overflow-x-auto pb-1">
         {domainEntries.map(([k, d], i) => (
           <button
             key={k}
@@ -92,6 +92,7 @@ export default function Learn() {
   // Training selection state
   const [trainingRows, setTrainingRows] = useState<TrainingRow[]>(BUILTIN_ROWS);
   const [selectedKey, setSelectedKey] = useState<string>('maven');
+  const learningToolRef = useRef<HTMLDivElement>(null);
 
   // Focus node from URL param (e.g. ?node=React)
   const nodeParam = searchParams.get('node');
@@ -137,6 +138,13 @@ export default function Learn() {
       setTrainingRows(prev => [...prev, { key, name: domain.name, domain, custom: true }]);
     }
     setSelectedKey(key);
+  }
+
+  function handleSelectTraining(key: string) {
+    setSelectedKey(key);
+    setTimeout(() => {
+      learningToolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }
 
   function handleRemoveRow(key: string) {
@@ -201,7 +209,7 @@ export default function Learn() {
             <TrainingTable
               rows={trainingRows}
               selectedKey={selectedKey}
-              onSelect={setSelectedKey}
+              onSelect={handleSelectTraining}
               onRemove={handleRemoveRow}
               onNewTraining={() => {
                 const el = document.querySelector<HTMLInputElement>('input[placeholder*="domain"]');
@@ -209,12 +217,14 @@ export default function Learn() {
               }}
             />
 
+            <div ref={learningToolRef}>
             <LearningTool
               domain={activeDomain}
               domainKey={activeDomainKey}
               focusNodeId={pendingFocusNode}
               onFocusHandled={() => setPendingFocusNode(null)}
             />
+            </div>
           </div>
         )}
 
