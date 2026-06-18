@@ -45,15 +45,15 @@ export default class ErrorBoundary extends Component<Props, State> {
                         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
                                   <div className="max-w-lg w-full backdrop-blur-xl bg-slate-800/40 border border-red-500/25 rounded-2xl p-8 text-center">
                                               <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-4" />
-                                              <h1 className="text-xl font-bold text-white mb-2">Something went wrong</h1>h1>
-                                              <p className="text-sm text-slate-400 mb-1">{this.state.error.message}</p>p>
+                                              <h1 className="text-xl font-bold text-white mb-2">Something went wrong</h1>
+                                              <p className="text-sm text-slate-400 mb-1">{this.state.error.message}</p>
                                   
                                     {isDev && (
                                         <details className="text-left mb-4 mt-3">
-                                                        <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-300 mb-1">Stack trace</summary>summary>
+                                                        <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-300 mb-1">Stack trace</summary>
                                                         <pre className="text-xs text-red-300/80 bg-slate-900/60 rounded-lg p-3 overflow-auto max-h-48 whitespace-pre-wrap">
                                                           {this.state.error.stack}
-                                                        </pre>pre>
+                                                        </pre>
                                         </details>details>
                                               )}
                                   
@@ -69,7 +69,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                                                                               className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-semibold"
                                                                             >
                                                                             Dashboard
-                                                            </a>a>
+                                                            </a>
                                                 {isDev && (
                                           <button
                                                               onClick={this.handleCopyLogs}
