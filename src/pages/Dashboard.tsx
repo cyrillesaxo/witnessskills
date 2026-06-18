@@ -202,8 +202,8 @@ export default function Dashboard() {
                                 <AppShell>
                                                 <div className="flex items-center justify-center min-h-[60vh]">
                                                                     <Loader2 className="w-8 h-8 text-teal-400 animate-spin" />
-                                                </div>div>
-                                </AppShell>AppShell>
+                                                </div>
+                                </AppShell>
                             );
     }
     
@@ -213,13 +213,13 @@ export default function Dashboard() {
                                                     <div className="flex items-center justify-center min-h-[60vh]">
                                                                         <div className="text-center">
                                                                                                 <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-                                                                                                <p className="text-slate-300">{error}</p>p>
+                                                                                                <p className="text-slate-300">{error}</p>
                                                                                                 <button onClick={loadData} className="mt-4 text-teal-400 hover:text-teal-300 text-sm">
                                                                                                                             Try again
-                                                                                                    </button>button>
-                                                                        </div>div>
-                                                    </div>div>
-                                    </AppShell>AppShell>
+                                                                                                    </button>
+                                                                        </div>
+                                                    </div>
+                                    </AppShell>
                                 );
         }
     
@@ -234,20 +234,20 @@ export default function Dashboard() {
                                                     <p className="text-slate-400 text-sm">No skills yet</p>p>
                                                     <Link to="/skills" className="mt-2 inline-block text-teal-400 hover:text-teal-300 text-sm">
                                                                         Add your first skill →
-                                                    </Link>Link>
-                                    </div>div>
+                                                    </Link>
+                                    </div>
                                 );
         }
     
         function StatCard({ icon, label, value, alert }: { icon: React.ReactNode; label: string; value: number; alert?: boolean }) {
                     return (
                                     <div className={`flex items-center gap-3 bg-slate-800/40 border rounded-xl px-4 py-3 ${alert ? 'border-amber-500/40' : 'border-slate-700/50'}`}>
-                                                    <div className="text-teal-400">{icon}</div>div>
+                                                    <div className="text-teal-400">{icon}</div>
                                                     <div>
-                                                                        <p className="text-lg font-bold text-white leading-none">{value}</p>p>
-                                                                        <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>p>
-                                                    </div>div>
-                                    </div>div>
+                                                                        <p className="text-lg font-bold text-white leading-none">{value}</p>
+                                                                        <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>
+                                                    </div>
+                                    </div>
                                 );
         }
     
@@ -255,21 +255,21 @@ export default function Dashboard() {
                     return (
                                     <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 hover:border-slate-600/60 transition-all duration-200 group">
                                                     <div className="flex items-start justify-between gap-2 mb-2">
-                                                                        <p className="text-sm font-medium text-slate-200 truncate">{skill.name}</p>p>
+                                                                        <p className="text-sm font-medium text-slate-200 truncate">{skill.name}</p>
                                                                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 flex-shrink-0 capitalize">
                                                                             {skill.level}
-                                                                        </span>span>
-                                                    </div>div>
+                                                                        </span>
+                                                    </div>
                                         {skill.domain && (
-                                                            <p className="text-[11px] text-slate-500 mb-2 truncate">{skill.domain}</p>p>
+                                                            <p className="text-[11px] text-slate-500 mb-2 truncate">{skill.domain}</p>
                                                     )}
                                                     <div className="flex items-center justify-between">
                                                         {skill.evidence ? (
                                                                 <span className="text-[10px] text-teal-400 flex items-center gap-1">
                                                                                             <Award className="w-3 h-3" /> Evidence
-                                                                </span>span>
+                                                                </span>
                                                             ) : (
-                                                                <span className="text-[10px] text-slate-600">No evidence</span>span>
+                                                                <span className="text-[10px] text-slate-600">No evidence</span>
                                                                         )}
                                                         {skill.rct_node_id && (
                                                                 <button
@@ -279,8 +279,8 @@ export default function Dashboard() {
                                                                                             <Target className="w-3 h-3" /> Graph
                                                                 </button>button>
                                                                         )}
-                                                    </div>div>
-                                    </div>div>
+                                                    </div>
+                                    </div>
                                 );
         }
     
@@ -292,9 +292,9 @@ export default function Dashboard() {
                                                     >
                                                     <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 group-hover:bg-teal-500/20 transition-colors">
                                                         {icon}
-                                                    </div>div>
-                                                    <span className="text-[11px] text-slate-400 group-hover:text-slate-300">{label}</span>span>
-                                    </Link>Link>
+                                                    </div>
+                                                    <span className="text-[11px] text-slate-400 group-hover:text-slate-300">{label}</span>
+                                    </Link>
                                 );
         }
     
@@ -309,18 +309,18 @@ export default function Dashboard() {
                                     {/* Header */}
                                                 <div className="flex items-center justify-between">
                                                                     <div>
-                                                                                            <h1 className="text-xl font-bold text-white">Dashboard</h1>h1>
+                                                                                            <h1 className="text-xl font-bold text-white">Dashboard</h1>
                                                                                             <p className="text-sm text-slate-400 mt-0.5">
                                                                                                 {skills.length} skill{skills.length !== 1 ? 's' : ''} tracked
-                                                                                                </p>p>
-                                                                    </div>div>
+                                                                                                </p>
+                                                                    </div>
                                                                     <button
                                                                                                 onClick={() => signOut().then(() => navigate('/login'))}
                                                                                                 className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
                                                                                             >
                                                                                             Sign out
-                                                                    </button>button>
-                                                </div>div>
+                                                                    </button>
+                                                </div>
                                 
                                     {/* Stats row */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -328,7 +328,7 @@ export default function Dashboard() {
                                                                     <StatCard icon={<Star className="w-4 h-4" />} label="Expert" value={expertCount} />
                                                                     <StatCard icon={<Trophy className="w-4 h-4 text-purple-400" />} label="Badges" value={earnedCount} />
                                                                     <StatCard icon={<Zap className="w-4 h-4 text-blue-400" />} label="Reviews due" value={dueCount} alert={dueCount > 0} />
-                                                </div>div>
+                                                </div>
                                 
                                     {/* Tabs */}
                                     {(flagHealth || flagAchievements) && (
@@ -344,20 +344,20 @@ export default function Dashboard() {
                                                                                                                     }`}
                                                                                                             >
                                                                                 {tab.label}
-                                                                                </button>button>
+                                                                                </button>
                                                                         ))}
-                                            </div>div>
+                                            </div>
                                                 )}
                                 
                                     {/* Tab: Overview */}
                                     {activeTab === 'overview' && (
                                             <div className="space-y-4">
                                                                     <div className="flex items-center justify-between">
-                                                                                                    <h2 className="text-sm font-semibold text-slate-300">Your Skills</h2>h2>
+                                                                                                    <h2 className="text-sm font-semibold text-slate-300">Your Skills</h2>
                                                                                                     <Link to="/skills" className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1">
                                                                                                                                         View all <ChevronRight className="w-3 h-3" />
-                                                                                                        </Link>Link>
-                                                                    </div>div>
+                                                                                                        </Link>
+                                                                    </div>
                                                 {skills.length === 0 ? (
                                                                             <EmptyState />
                                                                         ) : (
@@ -369,9 +369,9 @@ export default function Dashboard() {
                                                                                                                                                                 onOpenGraph={() => setGraphSkill({ name: skill.name, level: skill.level })}
                                                                                                                                                             />
                                                                                                                 ))}
-                                                                                </div>div>
+                                                                                </div>
                                                                     )}
-                                            </div>div>
+                                            </div>
                                                 )}
                                 
                                     {/* Tab: Skill Health */}
@@ -379,7 +379,7 @@ export default function Dashboard() {
                                             <div className="space-y-3">
                                                                     <p className="text-xs text-slate-500">
                                                                                                     Mastery scores, retention estimates, and review nudges powered by spaced repetition.
-                                                                    </p>p>
+                                                                    </p>
                                                 {masteryRecords.length === 0 ? (
                                                                             <EmptyState />
                                                                         ) : (
@@ -392,9 +392,9 @@ export default function Dashboard() {
                                                                                                                                                                 onViewProbe={() => navigate('/learn')}
                                                                                                                                                             />
                                                                                                                 ))}
-                                                                                </div>div>
+                                                                                </div>
                                                                     )}
-                                            </div>div>
+                                            </div>
                                                 )}
                                 
                                     {/* Tab: Achievements */}
@@ -408,9 +408,9 @@ export default function Dashboard() {
                                                                     <QuickAction to="/challenge"     icon={<Zap className="w-4 h-4" />}        label="Challenge" />
                                                                     <QuickAction to="/apply/gaps"    icon={<Target className="w-4 h-4" />}     label="Gap Analysis" />
                                                                     <QuickAction to="/apply/resume"  icon={<TrendingUp className="w-4 h-4" />} label="Resume" />
-                                                </div>div>
+                                                </div>
                                 
-                                </div>div>
+                                </div>
                     
                         {/* Ontology Modal */}
                         {graphSkill && (
@@ -420,6 +420,6 @@ export default function Dashboard() {
                                                                 onClose={() => setGraphSkill(null)}
                                                             />
                                     )}
-                    </AppShell>AppShell>
+                    </AppShell>
                 );
-}</AppShell>
+}
