@@ -54,7 +54,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                                                         <pre className="text-xs text-red-300/80 bg-slate-900/60 rounded-lg p-3 overflow-auto max-h-48 whitespace-pre-wrap">
                                                           {this.state.error.stack}
                                                         </pre>
-                                        </details>details>
+                                        </details>
                                               )}
                                   
                                               <div className="flex gap-3 justify-center mt-4 flex-wrap">
