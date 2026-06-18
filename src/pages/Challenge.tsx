@@ -235,7 +235,7 @@ export default function Challenge() {
 
         {/* Phase: Select Pack */}
         {phase === 'select-pack' && (
-          <PackSelectPhase packs={packs} onSelect={handlePackSelect} />
+          <PackSelectPhase packs={packs} loading={loading} onSelect={handlePackSelect} />
         )}
 
         {/* Phase: Add Source */}
@@ -289,7 +289,7 @@ export default function Challenge() {
 // SUB-COMPONENTS
 // ============================================================
 
-function PackSelectPhase({ packs, onSelect }: { packs: DomainPack[]; onSelect: (p: DomainPack) => void }) {
+function PackSelectPhase({ packs, loading, onSelect }: { packs: DomainPack[]; loading: boolean; onSelect: (p: DomainPack) => void }) {
   const icons: Record<string, typeof Brain> = {
     existing_solution_activation: BookOpen,
     ai_generated_backend_code_review: FileText,

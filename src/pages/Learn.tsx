@@ -20,6 +20,43 @@ import { GIT_DOMAIN, GRADLE_DOMAIN, DOCKER_DOMAIN, NPM_DOMAIN, TS_DOMAIN, SQL_DO
 import type { Domain } from '../lib/rct/types';
 const DOMAINS = [GIT_DOMAIN, GRADLE_DOMAIN, DOCKER_DOMAIN, NPM_DOMAIN, TS_DOMAIN, SQL_DOMAIN, NODEJS_DOMAIN, REACT_DOMAIN];
 
+const DOMAIN_KEYS: Record<string, string> = {
+  [GIT_DOMAIN.name]: 'git',
+  [GRADLE_DOMAIN.name]: 'gradle',
+  [DOCKER_DOMAIN.name]: 'docker',
+  [NPM_DOMAIN.name]: 'npm',
+  [TS_DOMAIN.name]: 'typescript',
+  [SQL_DOMAIN.name]: 'sql',
+  [NODEJS_DOMAIN.name]: 'nodejs',
+  [REACT_DOMAIN.name]: 'react',
+};
+
+function AuditTab() {
+  const [auditDomainIdx, setAuditDomainIdx] = useState(0);
+  const domain = DOMAINS[auditDomainIdx];
+  const domainKey = DOMAIN_KEYS[domain.name] ?? domain.name.toLowerCase();
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        {DOMAINS.map((d, i) => (
+          <button
+            key={d.name}
+            onClick={() => setAuditDomainIdx(i)}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
+              auditDomainIdx === i
+                ? 'bg-teal-600/20 text-teal-300 border-teal-500/30'
+                : 'text-slate-400 border-slate-700/50 hover:text-slate-300'
+            }`}
+          >
+            {d.name}
+          </button>
+        ))}
+      </div>
+      <CoverageAuditor domain={domain} domainKey={domainKey} />
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------
 // TYPES
 // ---------------------------------------------------------------
@@ -104,16 +141,16 @@ export default function Learn() {
 
   if (loadingSkills) {
         return (
-                <AppShell user={user} onSignOut={signOut}>
+                <AppShell onSignOut={signOut}>
                           <div className="flex items-center justify-center min-h-64">
                                     <Loader2 className="w-6 h-6 animate-spin text-teal-400" />
                           </div>
                 </AppShell>
               );
   }
-  
+
     return (
-          <AppShell user={user} onSignOut={signOut}>
+          <AppShell onSignOut={signOut}>
                 <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
                 
                   {/* Header */}
@@ -174,7 +211,7 @@ export default function Learn() {
                 
                   {/* ---- Tab: Audit ---- */}
                   {activeTab === 'audit' && (
-                      <CoverageAuditor userId={user?.id ?? ''} />
+                      <AuditTab />
                     )}
                 
                   {/* ---- Tab: Reviews (Spaced Repetition) ---- */}

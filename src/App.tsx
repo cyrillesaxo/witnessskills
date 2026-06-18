@@ -55,9 +55,9 @@ function AppRoutes() {
       <Route path="/apply" element={user ? <Apply /> : <Navigate to="/login" replace />} />
       <Route path="/apply/resume" element={user ? <ResumeBuilder /> : <Navigate to="/login" replace />} />
       <Route path="/apply/gaps" element={user ? <GapAnalyzer /> : <Navigate to="/login" replace />} />
+      <Route path="/challenge" element={user ? <Challenge /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
-          <Route path="/challenge" element={user ? <Challenge /> : <Navigate to="/login" replace />} />
-      </Routes>
+    </Routes>
   );
 }
 

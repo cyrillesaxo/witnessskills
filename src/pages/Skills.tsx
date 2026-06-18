@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {  ExternalLink, Loader2, AlertCircle, CheckCircle2,
-} from 'lucide-react';
+import { ExternalLink, Loader2, AlertCircle, CheckCircle2, Plus, Brain, X, Tag, ChevronDown, BookOpen } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
