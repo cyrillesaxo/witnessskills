@@ -64,7 +64,7 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                                                                                                                         />
                                                                     </div>
                                                                     <p className="text-[10px] text-slate-500 text-center mt-0.5">{achievement.progress}%</p>
-                                                </div>div>
+                                                </div>
                             )}
                 
                     {/* Earned date */}
