@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Zap, LogOut, Menu, X, Home, BookOpen, Star, User, Briefcase } from 'lucide-react';
+import { Zap, LogOut, Menu, X, Home, BookOpen, Star, User, Briefcase, Shield } from 'lucide-react';
 import BackgroundGlow from './BackgroundGlow';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../../context/useAuth';
@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { to: '/learn', label: 'Learn', icon: BookOpen },
   { to: '/skills', label: 'Skills', icon: Star },
   { to: '/apply', label: 'Apply', icon: Briefcase },
-  { to: '/challenge', label: 'Challenge', icon: Zap },
+  { to: '/verify', label: 'Verify', icon: Shield },
   { to: '/profile', label: 'Profile', icon: User },
 ] as const;
 
