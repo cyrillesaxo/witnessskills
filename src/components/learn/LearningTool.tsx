@@ -55,6 +55,7 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
   const [primerNodeId, setPrimerNodeId] = useState<string | null>(null);
   const [justCleared, setJustCleared] = useState(false);
   const primedRef = useRef(new Set<string>());
+  const probeShownRef = useRef<number>(0);
 
   const simNow = now + clockOffset;
 
@@ -162,6 +163,7 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
     setFeedback(null);
     setHintTier(0);
     setAuthoring(null);
+    probeShownRef.current = Date.now();
   }, [view, domainKey]);
 
   const tryOpen = useCallback((id: string) => {
@@ -287,9 +289,11 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
           setHintTier(0);
         } else {
           let newCret = 1;
+          const elapsedSec = (Date.now() - probeShownRef.current) / 1000;
+          const latencyPenalty = Math.min(0.3, Math.max(0, (elapsedSec - 15) / 600) * 0.12);
           setState(s => {
             const st = s[active];
-            const levelCret = Math.max(0, 1 - 0.3 * st.hintsUsed - 0.1 * Math.max(0, st.attempts - aws.length - 1) - 0.2 * st.shallowHits);
+            const levelCret = Math.max(0, 1 - 0.3 * st.hintsUsed - 0.1 * Math.max(0, st.attempts - aws.length - 1) - 0.2 * st.shallowHits - latencyPenalty);
             const clearedCount = lvl + 1;
             newCret = (st.cret * Math.max(0, clearedCount - 1) + levelCret) / clearedCount;
             return { ...s, [active]: { ...st, cleared: Math.max(st.cleared, lvl), awSurvived: Math.max(st.awSurvived, aws.length), lastRetrieved: simNow, reps: (st.reps || 0) + 1, cret: newCret, attempts: 0, hintsUsed: 0, shallowHits: 0 } };

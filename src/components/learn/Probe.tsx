@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, FlaskConical } from 'lucide-react';
 import type { OntologyNode, NodeState, AuthoringState, Antiwitness } from '../../lib/rct/types';
-import { TIER_COLOR } from '../../lib/rct/types';
+import { TIER_COLOR, DW_LOCATIONS } from '../../lib/rct/types';
 import { gradeAuthoring } from '../../lib/rct/grading';
 import type { ReviewQuality } from '../../lib/spacedRepetition';
+import QuizPanel from './QuizPanel';
 
 interface ProbeProps {
   node: OntologyNode;
@@ -39,6 +40,7 @@ export default function Probe({
   const aws = L.antiwitnesses || (L.antiwitness ? [L.antiwitness] : []);
   const awIdx = feedback?.awIndex || 0;
   const aw = aws[Math.min(awIdx, aws.length - 1)];
+  const [showQuiz, setShowQuiz] = useState(false);
 
   const discriminatePair = useDiscriminatePair(aw);
 
@@ -60,6 +62,10 @@ export default function Probe({
           </div>
         )}
 
+        {showQuiz ? (
+          <QuizPanel node={node} onDone={() => setShowQuiz(false)} />
+        ) : (
+          <>
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           {node.levels.map((Lv, i) => (
             <span key={i} className={`font-mono text-xs font-bold px-2.5 py-1 rounded-full border ${
@@ -197,6 +203,26 @@ export default function Probe({
           </div>
         )}
 
+        {/* DW location chip — shown after anti-witness feedback */}
+        {isAnti && feedback && aw?.location && (() => {
+          const loc = DW_LOCATIONS[aw.location];
+          return (
+            <div className="mb-3 flex items-start gap-2 p-3 rounded-lg border"
+              style={{ borderColor: `${loc.color}33`, background: `${loc.color}0d` }}>
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest font-bold"
+                  style={{ color: loc.color }}>
+                  DW type · {loc.label}
+                  {aw.defeaterDepth !== undefined && <span className="ml-2 opacity-60">depth {aw.defeaterDepth}</span>}
+                </span>
+                <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${loc.color}cc` }}>{loc.def}</p>
+                <p className="text-xs mt-0.5 text-slate-400">{loc.remedy}</p>
+                {aw.envelope && <p className="text-xs mt-1 font-mono text-slate-500">envelope: {aw.envelope}</p>}
+              </div>
+            </div>
+          );
+        })()}
+
         {justCleared ? (
           /* ---- Insight card + confidence rating (Khan / Brilliant pattern) ---- */
           <div className="mt-3 space-y-4">
@@ -285,6 +311,19 @@ export default function Probe({
           <span className="text-xs text-slate-500 font-mono hidden sm:inline">⌘/Ctrl + Enter</span>
           {feedback?.graded === 'fallback' && <span className="text-xs text-slate-500 font-mono">offline · keyword check</span>}
           {feedback?.graded === 'model' && <span className="text-xs text-emerald-500/80 font-mono">model graded</span>}
+        </div>
+          </>
+        )}
+
+        {/* Quiz toggle */}
+        <div className="mt-4 pt-3 border-t border-slate-700/40">
+          <button
+            onClick={() => setShowQuiz(true)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-700/40 border border-slate-600/30 text-slate-400 hover:text-slate-200 hover:border-slate-500/50 transition-colors"
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            Quiz this node
+          </button>
         </div>
           </>
         )}
