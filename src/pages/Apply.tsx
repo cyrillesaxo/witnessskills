@@ -111,7 +111,7 @@ export default function Apply() {
 
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <div className="space-y-8">
 
         {/* Header */}
         <div className="flex items-start justify-between">
