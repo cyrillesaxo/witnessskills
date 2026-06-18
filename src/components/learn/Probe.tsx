@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import type { OntologyNode, NodeState, AuthoringState, Antiwitness } from '../../lib/rct/types';
 import { TIER_COLOR } from '../../lib/rct/types';
 import { gradeAuthoring } from '../../lib/rct/grading';
+import type { ReviewQuality } from '../../lib/spacedRepetition';
 
 interface ProbeProps {
   node: OntologyNode;
@@ -23,12 +24,14 @@ interface ProbeProps {
   stage: number;
   authoring: AuthoringState | null;
   setAuthoring: (v: AuthoringState | null | ((a: AuthoringState | null) => AuthoringState | null)) => void;
+  justCleared: boolean;
+  onRate: (quality: ReviewQuality) => void;
 }
 
 export default function Probe({
   node, view, level, phase, answer, setAnswer, feedback, onSubmit, onClose,
   grading, onDecompress, onRecompress, hintTier, setHintTier, onHint,
-  stage, authoring, setAuthoring,
+  stage, authoring, setAuthoring, justCleared, onRate,
 }: ProbeProps) {
   const L = node.levels[level];
   const isAnti = phase === 'anti';
@@ -194,6 +197,43 @@ export default function Probe({
           </div>
         )}
 
+        {justCleared ? (
+          /* ---- Insight card + confidence rating (Khan / Brilliant pattern) ---- */
+          <div className="mt-3 space-y-4">
+            {/* Key insight */}
+            {node.gist && (
+              <div className="p-4 rounded-xl bg-emerald-500/8 border border-emerald-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400">Key insight you just proved</span>
+                </div>
+                <p className="text-sm text-emerald-100 leading-relaxed">{node.gist}</p>
+              </div>
+            )}
+
+            {/* Confidence rating */}
+            <div>
+              <p className="text-xs text-slate-400 mb-2">How confident do you feel? This schedules your next review.</p>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { quality: 1 as ReviewQuality, label: 'Again', sub: '< 1 day',  ring: 'border-red-500/40 text-red-300 hover:bg-red-500/10'  },
+                  { quality: 3 as ReviewQuality, label: 'Good',  sub: '~ 6 days', ring: 'border-amber-500/40 text-amber-300 hover:bg-amber-500/10' },
+                  { quality: 5 as ReviewQuality, label: 'Easy',  sub: '~ 2 weeks',ring: 'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10' },
+                ] as const).map(({ quality, label, sub, ring }) => (
+                  <button
+                    key={quality}
+                    onClick={() => onRate(quality)}
+                    className={`flex flex-col items-center gap-1 py-3 rounded-xl border transition-all ${ring}`}
+                  >
+                    <span className="text-sm font-semibold">{label}</span>
+                    <span className="text-[10px] font-mono opacity-70">{sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
         <textarea
           className="w-full mt-3 px-4 py-3 bg-slate-900/50 border border-slate-600/60 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-y"
           rows={3} value={answer} placeholder="Map it onto the anchor, in your own words…"
@@ -246,6 +286,8 @@ export default function Probe({
           {feedback?.graded === 'fallback' && <span className="text-xs text-slate-500 font-mono">offline · keyword check</span>}
           {feedback?.graded === 'model' && <span className="text-xs text-emerald-500/80 font-mono">model graded</span>}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

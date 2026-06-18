@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Brain, ChevronDown, ChevronUp, X } from 'lucide-react';
 import type { Domain, NodeState, AuthoringState } from '../../lib/rct/types';
 import { STAGES } from '../../lib/rct/types';
@@ -10,6 +10,15 @@ import { isRctMigrationError } from '../../lib/skillsSchema';
 import { useAuth } from '../../context/useAuth';
 import Graph from './Graph';
 import Probe from './Probe';
+import PrimerCard from './PrimerCard';
+import {
+  loadSM2Cards,
+  saveSM2Cards,
+  createSM2Card,
+  upsertSM2Card,
+  sm2Review,
+  type ReviewQuality,
+} from '../../lib/spacedRepetition';
 
 interface LearningToolProps {
   domain: Domain;
@@ -43,6 +52,9 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
   const [loaded, setLoaded] = useState(false);
   const [syncNotice, setSyncNotice] = useState('');
   const [focusNotice, setFocusNotice] = useState('');
+  const [primerNodeId, setPrimerNodeId] = useState<string | null>(null);
+  const [justCleared, setJustCleared] = useState(false);
+  const primedRef = useRef(new Set<string>());
 
   const simNow = now + clockOffset;
 
@@ -139,12 +151,18 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
 
   const open = useCallback((id: string) => {
     if (!view[id].unlocked) return;
+    const key = `${domainKey}:${id}`;
+    if (view[id].cleared < 0 && !primedRef.current.has(key)) {
+      primedRef.current.add(key);
+      setPrimerNodeId(id);
+      return;
+    }
     setActive(id);
     setAnswer('');
     setFeedback(null);
     setHintTier(0);
     setAuthoring(null);
-  }, [view]);
+  }, [view, domainKey]);
 
   const tryOpen = useCallback((id: string) => {
     if (view[id]?.unlocked) {
@@ -183,15 +201,17 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
   // BUG-006: Close node modal on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && active) {
+      if (e.key === 'Escape' && (active || primerNodeId)) {
         setActive(null);
+        setPrimerNodeId(null);
         setAnswer('');
         setFeedback(null);
+        setJustCleared(false);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [active]);
+  }, [active, primerNodeId]);
 
 
   const probeLevel = useCallback((id: string) => Math.min(view[id].depth, Math.max(0, view[id].cleared + 1)), [view]);
@@ -279,6 +299,7 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
           setAnswer('');
           setHintTier(0);
           setAuthoring(null);
+          setJustCleared(true);
           if (newCret >= 0.75) {
             setEpistemicStage(st => Math.min(STAGES.length - 1, st + 1));
           }
@@ -324,6 +345,22 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
     setAnswer('');
     setHintTier(0);
   }, []);
+
+  const onRate = useCallback((quality: ReviewQuality) => {
+    if (!active) return;
+    const skillId = `${domainKey}:${active}`;
+    const cards = loadSM2Cards();
+    const existing = cards.find(c => c.skillId === skillId);
+    const card = existing ?? createSM2Card(skillId, byId[active].label);
+    const { updated } = sm2Review(card, quality);
+    saveSM2Cards(upsertSM2Card(cards, updated));
+    setJustCleared(false);
+    setActive(null);
+    setAnswer('');
+    setFeedback(null);
+    setHintTier(0);
+    setAuthoring(null);
+  }, [active, domainKey, byId]);
 
   const totalLevels = nodes.reduce((a, n) => a + n.levels.length, 0);
   const clearedLevels = nodes.reduce((a, n) => a + Math.max(0, view[n.id].cleared + 1), 0);
@@ -430,11 +467,28 @@ export default function LearningTool({ domain, domainKey, focusNodeId, onFocusHa
         <Probe node={byId[active]} view={view[active]} level={probeLevel(active)}
           phase={(feedback?.phase as 'witness' | 'anti') || 'witness'}
           answer={answer} setAnswer={setAnswer} feedback={feedback}
-          onSubmit={submit} onClose={() => setActive(null)} grading={grading}
+          onSubmit={submit} onClose={() => { setActive(null); setJustCleared(false); }} grading={grading}
           onDecompress={() => decompress(active)} onRecompress={() => recompress(active)}
           hintTier={hintTier} setHintTier={setHintTier}
           onHint={() => setState(s => ({ ...s, [active]: { ...s[active], hintsUsed: s[active].hintsUsed + 1 } }))}
-          stage={epistemicStage} authoring={authoring} setAuthoring={setAuthoring} />
+          stage={epistemicStage} authoring={authoring} setAuthoring={setAuthoring}
+          justCleared={justCleared} onRate={onRate} />
+      )}
+
+      {primerNodeId && byId[primerNodeId] && (
+        <PrimerCard
+          node={byId[primerNodeId]}
+          level={probeLevel(primerNodeId)}
+          onStart={() => {
+            const id = primerNodeId;
+            setPrimerNodeId(null);
+            setActive(id);
+            setAnswer('');
+            setFeedback(null);
+            setHintTier(0);
+            setAuthoring(null);
+          }}
+        />
       )}
     </div>
   );
