@@ -294,8 +294,8 @@ export default function Skills() {
                                                     >
                                                     <BookOpen className="w-3 h-3" aria-hidden="true" />
                                                     Practice in Reader
-                                  </Link>Link>
-                                ) : null; })()}</Link>
+                                  </Link>
+                                ) : null; })()}
                   </div>
 
                   {/* Evidence */}
