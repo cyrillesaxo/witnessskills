@@ -33,16 +33,16 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                     {!isEarned && (
                                                 <div className="absolute top-2 right-2">
                                                                     <Lock className="w-3 h-3 text-slate-600" />
-                                                </div>div>
+                                                </div>
                             )}
                 
                     {/* Icon */}
-                            <div className="text-2xl mb-1.5 text-center">{achievement.icon}</div>div>
+                            <div className="text-2xl mb-1.5 text-center">{achievement.icon}</div>
                 
                     {/* Title */}
                             <p className="text-xs font-semibold text-slate-200 text-center truncate">
                                 {achievement.title}
-                            </p>p>
+                            </p>
                 
                     {/* Rarity tag */}
                             <p className={`text-[10px] text-center mt-0.5 ${
@@ -52,7 +52,7 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                                                 'text-slate-500'
                             }`}>
                                 {label}
-                            </p>p>
+                            </p>
                 
                     {/* Progress bar if not earned */}
                     {!isEarned && achievement.progress < 100 && (
@@ -62,8 +62,8 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                                                                                                                             className="h-1 rounded-full bg-teal-600 transition-all duration-500"
                                                                                                                             style={{ width: `${achievement.progress}%` }}
                                                                                                                         />
-                                                                    </div>div>
-                                                                    <p className="text-[10px] text-slate-500 text-center mt-0.5">{achievement.progress}%</p>p>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-slate-500 text-center mt-0.5">{achievement.progress}%</p>
                                                 </div>div>
                             )}
                 
@@ -71,9 +71,9 @@ function BadgeCard({ achievement }: BadgeCardProps) {
                     {isEarned && achievement.earnedAt && (
                                                 <p className="text-[10px] text-teal-400 text-center mt-1">
                                                     {new Date(achievement.earnedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                                </p>p>
+                                                </p>
                             )}
-                </div>div>
+                </div>
             );
 }
 
@@ -116,10 +116,10 @@ export default function AchievementsPanel({
                                                                     <Trophy className="w-4 h-4 text-amber-400" />
                                                                     <span className="text-sm font-semibold text-slate-200">
                                                                         {earnedCount} / {totalCount} earned
-                                                                    </span>span>
-                                                </div>div>
-                                                <span className="text-xs text-slate-400">{overallPct}% complete</span>span>
-                                </div>div>
+                                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-slate-400">{overallPct}% complete</span>
+                                </div>
                     
                         {/* Progress bar */}
                                 <div className="w-full bg-slate-700/50 rounded-full h-1.5">
@@ -127,7 +127,7 @@ export default function AchievementsPanel({
                                                                         className="h-1.5 rounded-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all duration-500"
                                                                         style={{ width: `${overallPct}%` }}
                                                                     />
-                                </div>div>
+                                </div>
                     
                         {/* Filter tabs */}
                                 <div className="flex gap-1.5 flex-wrap">
@@ -142,7 +142,7 @@ export default function AchievementsPanel({
                                                                         }`}
                                                                     >
                                                 {tab === 'in-progress' ? 'In progress' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                                            </button>button>
+                                            </button>
                                         ))}
                                 
                                     {/* Rarity filter toggle */}
@@ -151,8 +151,8 @@ export default function AchievementsPanel({
                                                                         className="text-xs px-3 py-1 rounded-lg border border-transparent text-slate-400 hover:text-slate-300 flex items-center gap-1 ml-auto"
                                                                     >
                                                                     Rarity {showRarityFilter ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                </button>button>
-                                </div>div>
+                                                </button>
+                                </div>
                     
                         {showRarityFilter && (
                                         <div className="flex gap-1.5 flex-wrap">
@@ -167,24 +167,24 @@ export default function AchievementsPanel({
                                                                                                         }`}
                                                                                                 >
                                                                         {r}
-                                                                    </button>button>
+                                                                    </button>
                                                                 ))}
-                                        </div>div>
+                                        </div>
                                 )}
                     
                         {/* Badge grid */}
                         {filtered.length === 0 ? (
                                         <div className="text-center py-8">
                                                             <Trophy className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-                                                            <p className="text-xs text-slate-500">No achievements match this filter</p>p>
-                                        </div>div>
+                                                            <p className="text-xs text-slate-500">No achievements match this filter</p>
+                                        </div>
                                     ) : (
                                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                                             {filtered.map(a => (
                                                                     <BadgeCard key={a.id} achievement={a} />
                                                                 ))}
-                                        </div>div>
+                                        </div>
                                 )}
-                    </div>div>
+                    </div>
                 );
-}</div>
+}
