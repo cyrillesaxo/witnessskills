@@ -3,7 +3,7 @@
 // Shows due reviews, memory strength, and lets users self-rate after a probe.
 // Mounted inside the Learn page tab when VITE_FLAG_SPACED_REPETITION is on.
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Brain, Clock, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import {
     type SM2Card,

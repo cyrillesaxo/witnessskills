@@ -1,4 +1,5 @@
 import type { OntologyNode, NodeState } from '../../lib/rct/types';
+import { TIER_COLOR } from '../../lib/rct/types';
 interface GraphProps {
   nodes: OntologyNode[];
   view: Record<string, NodeState>;

@@ -95,7 +95,6 @@ export default function GapAnalyzer() {
 
     try {
       const jdSkills = extractSkillsFromJD(jdText);
-      const portfolioNames = new Set(skills.map(s => s.name.toLowerCase()));
 
       const gapResults: GapResult[] = jdSkills.map(jdSkill => {
         const match = skills.find(s =>

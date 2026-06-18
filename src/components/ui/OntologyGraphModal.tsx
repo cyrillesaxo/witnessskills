@@ -56,7 +56,7 @@ const TIER_COLORS: Record<string, string> = {
   Senior: '#ef4444',
 };
 const COL_X = (col: number, w: number) => 40 + col * (w / 6);
-const ROW_Y = (row: number, h: number) => 60 + row * 90;
+const ROW_Y = (row: number) => 60 + row * 90;
 
 function OntologyGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -70,7 +70,7 @@ function OntologyGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[
     const col = Math.min(n.col ?? 0, 5);
     const row = rowCounts[col] ?? 0;
     rowCounts[col] = row + 1;
-    pos[n.id] = { x: COL_X(col, W), y: ROW_Y(row, H) };
+    pos[n.id] = { x: COL_X(col, W), y: ROW_Y(row) };
   });
 
   const [hovered, setHovered] = useState<string | null>(null);

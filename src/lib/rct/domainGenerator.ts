@@ -23,6 +23,7 @@ interface RawAnti {
   prompt: string;
   trap: string;
   example?: string;
+  accept?: (a: string) => boolean;
   acceptKeywords?: string[];
   rejectKeywords?: string[];
 }
@@ -49,7 +50,7 @@ interface RawNode {
   levels: RawLevel[];
 }
 
-export function hydrateGenerated(raw: { name: string; root: string; helloPom?: string | null; nodes: RawNode[]; generated?: boolean }): Domain {
+export function hydrateGenerated(raw: { name: string; root: string; helloPom?: string | null; nodes: RawNode[]; generated?: boolean; grounded?: boolean }): Domain {
   const nodes: OntologyNode[] = raw.nodes.map(n => ({
     ...n,
     levels: n.levels.map(L => {
@@ -68,7 +69,7 @@ export function hydrateGenerated(raw: { name: string; root: string; helloPom?: s
           prompt: a.prompt,
           trap: a.trap,
           example: a.example,
-          accept: buildAccept(a.acceptKeywords || [], a.rejectKeywords || []),
+          accept: a.accept ?? buildAccept(a.acceptKeywords || [], a.rejectKeywords || []),
         })),
         hints: L.hints,
       };
@@ -80,7 +81,8 @@ export function hydrateGenerated(raw: { name: string; root: string; helloPom?: s
     root: raw.root,
     nodes,
     helloPom: raw.helloPom || undefined,
-    generated: true,
+    generated: raw.generated ?? true,
+    grounded: raw.grounded,
   };
 }
 

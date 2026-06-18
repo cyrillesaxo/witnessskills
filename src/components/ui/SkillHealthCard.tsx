@@ -3,7 +3,6 @@
 // Shows skill health, retention %, trend, and next-review nudge.
 // Rendered on the Dashboard when VITE_FLAG_SKILL_HEALTH is on.
 
-import React from 'react';
 import { TrendingUp, TrendingDown, Minus, Brain, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { SkillMasteryRecord } from '../../lib/mastery';
 import { PROFICIENCY_LABELS } from '../../lib/mastery';
@@ -44,7 +43,7 @@ function trendColor(trend: SkillMasteryRecord['trend']): string {
     return 'text-slate-400';
 }
 
-function RetentionBar({ pct, urgencyClass }: { pct: number; urgencyClass: string }) {
+function RetentionBar({ pct }: { pct: number }) {
     return (
           <div className="w-full bg-slate-700/50 rounded-full h-1.5 mt-1">
                 <div
@@ -114,7 +113,7 @@ export default function SkillHealthCard({
                         <div>
                                   <span className="text-slate-400">Retention </span>
                                   <span className={urgency + ' font-semibold'}>{retPct}%</span>
-                                  <RetentionBar pct={retPct} urgencyClass={urgency} />
+                                  <RetentionBar pct={retPct} />
                         </div>
                         <div className="flex items-center gap-1">
                                   <TrendIcon trend={mastery.trend} />

@@ -3,7 +3,7 @@
 // Displays earned achievements and progress toward locked ones.
 // Used on Dashboard / Profile when VITE_FLAG_ACHIEVEMENTS is on.
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Trophy, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Achievement, AchievementRarity } from '../../lib/achievements';
 import { RARITY_STYLES } from '../../lib/achievements';

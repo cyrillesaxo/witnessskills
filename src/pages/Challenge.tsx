@@ -3,21 +3,21 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import AppShell from '../components/ui/AppShell';
-import { supabase } from '../lib/supabase';
+import { supabase as _supabase } from '../lib/supabase';
 import {
-  getPublishedPacks, getNodesByPack, getMutationsByPack,
+  getPublishedPacks,
   getMisconceptionsByPack, selectNextChallenge, createAttempt,
   updateAttemptVerdict, createSourceArtifact, classifySourceType,
   emitFieldTestEvent,
 } from '../lib/pft-queries';
-import { evaluateAttempt, calculateProofReadiness, generateActivationPlan } from '../lib/pft-engine';
+import { evaluateAttempt } from '../lib/pft-engine';
 import type {
   DomainPack, Challenge as ChallengeType, AttemptFeedback,
-  SourceArtifact, MechanismNode, AntiwitnessMutation, MisconceptionSignature,
+  SourceArtifact, MechanismNode,
 } from '../lib/pft-types';
 import {
   Brain, ChevronRight, RotateCcw, CheckCircle, AlertCircle,
-  XCircle, Clock, ArrowLeft, Plus, Zap, FileText, BookOpen,
+  XCircle, Clock, ArrowLeft, Zap, FileText, BookOpen,
   Target, TrendingUp, Award,
 } from 'lucide-react';
 
@@ -58,7 +58,6 @@ export default function Challenge() {
   const [answer, setAnswer] = useState('');
   const [assumptions, setAssumptions] = useState('');
   const [feedback, setFeedback] = useState<AttemptFeedback | null>(null);
-  const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null);
   const [sourceText, setSourceText] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceTitle, setSourceTitle] = useState('');
@@ -180,7 +179,6 @@ export default function Challenge() {
         result.feedback.scheduled_retrieval_at,
       );
 
-      setCurrentAttemptId(attempt.id);
       setFeedback(result.feedback);
       setPhase('feedback');
       setCompletedCount(c => c + 1);
@@ -515,7 +513,7 @@ function ChallengePhase({
 }
 
 function FeedbackPhase({
-  feedback, node, onNext, onDone,
+  feedback, node: _node, onNext, onDone,
 }: {
   feedback: AttemptFeedback;
   node: MechanismNode;

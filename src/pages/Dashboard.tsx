@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-        Brain, BookOpen, Target, TrendingUp, Award, ChevronRight,
+        Brain, Target, TrendingUp, Award, ChevronRight,
         Loader2, AlertCircle, Zap, Trophy, Star,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
@@ -20,7 +20,6 @@ import { logger } from '../lib/logger';
 import {
         levelToProficiency,
         computeDecayedScore,
-        inferTrend,
         type SkillMasteryRecord,
 } from '../lib/mastery';
 import {
@@ -47,13 +46,6 @@ interface Skill {
         domain: string | null;
         evidence: string | null;
         rct_node_id: string | null;
-}
-
-interface RecentActivity {
-        id: string;
-        type: string;
-        description: string;
-        created_at: string;
 }
 
 // ---------------------------------------------------------------
@@ -110,7 +102,6 @@ export default function Dashboard() {
         const navigate = useNavigate();
 
     const [skills, setSkills] = useState<Skill[]>([]);
-        const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [graphSkill, setGraphSkill] = useState<{ name: string; level: string } | null>(null);
@@ -138,8 +129,13 @@ export default function Dashboard() {
                       const ctx: AchievementContext = {
                                       skillCount: skills.length,
                                       expertSkillCount: skills.filter(s => s.level === 'expert').length,
-                                      evidenceCount: skills.filter(s => !!s.evidence).length,
-                                      sm2CardCount: sm2Cards.length,
+                                      advancedSkillCount: skills.filter(s => s.level === 'advanced').length,
+                                      probeCount: sm2Cards.length,
+                                      dueReviewsCompleted: 0,
+                                      consecutiveProbesWithNoDecline: 0,
+                                      challengeCount: 0,
+                                      applicationsSent: 0,
+                                      resumeVersions: 0,
                                       streakDays: 0,
                       };
                 const evaluated = evaluateAchievements(ctx);
@@ -169,8 +165,6 @@ export default function Dashboard() {
                                 const loadedSkills = (skillsRes.data ?? []) as Skill[];
                                 setSkills(loadedSkills);
                                 logger.info('Dashboard: data loaded', { skillCount: loadedSkills.length, userId: user?.id });
-                                // Recent activity is not available yet (activities table not in schema)
-                    setRecentActivity([]);
                 } catch (e) {
                                 const msg = e instanceof Error ? e.message : String(e);
                                 logger.error('Dashboard: failed to load user data', { userId: user?.id }, e instanceof Error ? e : new Error(msg));
@@ -186,7 +180,6 @@ export default function Dashboard() {
 
     // ---- Stats
     const expertCount    = (skills ?? []).filter(s => s.level === 'expert').length;
-        const advancedCount  = (skills ?? []).filter(s => s.level === 'advanced').length;
         const earnedCount    = (achievements ?? []).filter(a => !!a.earnedAt).length;
         const dueCount       = sm2Cards.filter(c => new Date(c.nextReviewAt).getTime() <= Date.now()).length;
 

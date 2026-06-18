@@ -5,10 +5,10 @@
 
 import type {
   MechanismNode, AntiwitnessMutation, MisconceptionSignature,
-  PftAttempt, AttemptVerdict, AttemptFeedback, ProofReadiness,
-  MechanismSummary, MutationSummary, ProofRecord, DomainPack,
+  AttemptVerdict, AttemptFeedback, ProofReadiness,
+  MechanismSummary, DomainPack,
 } from './pft-types';
-import { updateAttemptVerdict, getMisconceptionsByPack, getUserAttemptsForPack } from './pft-queries';
+import { getUserAttemptsForPack } from './pft-queries';
 
 // ============================================================
 // HEURISTIC EVALUATION
@@ -105,7 +105,7 @@ function answerMatchesMisconception(answer: string, sig: MisconceptionSignature,
   return shallowRatio > 0.4 && mechanismRatio < 0.25;
 }
 
-function buildFeedback(verdict: AttemptVerdict, node: MechanismNode, mutation: AntiwitnessMutation, detectedSigs: MisconceptionSignature[], totalScore: number | null): AttemptFeedback {
+function buildFeedback(verdict: AttemptVerdict, node: MechanismNode, mutation: AntiwitnessMutation, detectedSigs: MisconceptionSignature[], _totalScore: number | null): AttemptFeedback {
   const verdictLabels: Record<AttemptVerdict, string> = {
     mechanism_preserved: 'Strong',
     partially_preserved: 'Partial',

@@ -5,8 +5,7 @@ import { supabase } from './supabase';
 import type {
   DomainPack, SourceArtifact, MechanismNode, AntiwitnessMutation,
   MisconceptionSignature, PftAttempt, ProofRecord, VerificationRequest,
-  EvidenceReport, FieldTestEvent, SourceType, AttemptVerdict,
-  ReceiptEventType, SourceClassification, Challenge, PackCardConfig,
+  AttemptVerdict, SourceClassification, Challenge, PackCardConfig,
 } from './pft-types';
 
 // ============================================================
