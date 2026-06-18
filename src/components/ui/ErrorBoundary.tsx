@@ -63,7 +63,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                                                                               className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/60 text-slate-200 rounded-xl text-sm font-medium hover:bg-slate-700"
                                                                             >
                                                                             <RefreshCw className="w-4 h-4" /> Try again
-                                                            </button>button>
+                                                            </button>
                                                             <a
                                                                               href="/"
                                                                               className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-sm font-semibold"
@@ -76,17 +76,17 @@ export default class ErrorBoundary extends Component<Props, State> {
                                                               className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/60 text-slate-400 rounded-xl text-sm font-medium hover:bg-slate-700"
                                                             >
                                                             <ClipboardList className="w-4 h-4" /> Copy logs
-                                          </button>button>
+                                          </button>
                                                             )}
-                                              </div>div>
+                                              </div>
                                   
                                     {isDev && this.state.logDump && (
                                         <pre className="mt-4 text-left text-xs text-slate-500 bg-slate-900/60 rounded-lg p-3 overflow-auto max-h-48 whitespace-pre-wrap">
                                           {this.state.logDump}
-                                        </pre>pre>
+                                        </pre>
                                               )}
-                                  </div>div>
-                        </div>div>
+                                  </div>
+                        </div>
                       );
       }
         return this.props.children;
