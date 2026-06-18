@@ -5,7 +5,6 @@ import { useAuth } from '../context/useAuth';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { supabase } from '../lib/supabase';
 import AppShell from '../components/ui/AppShell';
-import BackgroundGlow from '../components/ui/BackgroundGlow';
 
 interface Skill {
   id: string;
@@ -156,9 +155,7 @@ export default function GapAnalyzer() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-        <BackgroundGlow />
-        <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <div className="space-y-6">
 
           {/* Header */}
           <div>
@@ -304,7 +301,6 @@ export default function GapAnalyzer() {
               )}
             </div>
           )}
-        </div>
       </div>
     </AppShell>
   );
