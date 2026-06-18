@@ -7,7 +7,7 @@ import { useAuth } from '../context/useAuth';
 import { supabase } from '../lib/supabase';
 
 /**
- * Reader page — embeds regimeReader (white light surface) inside the
+ * Reader page â embeds regimeReader (white light surface) inside the
  * dark WitnessSkills shell.
  *
  * PackSpec integration:
@@ -93,7 +93,7 @@ export default function Reader() {
                                                               });
                                               }
                                 }
-                    } catch { /* silent — packspec is optional */ }
+                    } catch { /* silent â packspec is optional */ }
           });
   }, [skillId, user]);
 
@@ -154,24 +154,23 @@ export default function Reader() {
 
   return (
           <AppShell trail={[{ label: 'Reader' }]}>
-                    <div className="light-surface -mx-4 -mt-6 min-h-[calc(100vh-3.5rem)]"
-                                   style={{ background: 'var(--bg-base, #f8fafc)' }}>
+                    <div className="space-y-3">
 
-                        {/* ── Context banner ─────────────────────────────────────────── */}
+                        {/* ââ Context banner âââââââââââââââââââââââââââââââââââââââââââ */}
                         {meta && (
-                                                 <div className={`mx-4 mt-4 px-4 py-3 rounded-xl border text-sm flex items-start gap-3 ${colorMap[meta.color]}`}>
+                                                 <div className={`px-4 py-3 rounded-xl border text-sm flex items-start gap-3 ${colorMap[meta.color]}`}>
                                                                  <BookOpen className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                                                                  <div>
-                                                                               <span className="font-semibold">{meta.move} · {meta.label}</span>
+                                                                               <span className="font-semibold">{meta.move} Â· {meta.label}</span>
                                                                                <span className="ml-2 opacity-80">{meta.description}</span>
                                                                                <span className="ml-2 opacity-60 text-xs">Practice this location in the reader below.</span>
                                                                  </div>
                                                  </div>
                             )}
                     
-                        {/* ── PackSpec convergence HUD ─────────────────────────────── */}
+                        {/* ââ PackSpec convergence HUD âââââââââââââââââââââââââââââââ */}
                         {skillId && (
-                                                 <div className="mx-4 mt-3 px-4 py-2 rounded-lg bg-white border border-slate-200 flex items-center gap-4 text-xs text-slate-600 flex-wrap">
+                                                 <div className="px-4 py-2 rounded-lg bg-white border border-slate-200 flex items-center gap-4 text-xs text-slate-600 flex-wrap">
                                                              <span className="font-medium text-slate-700">PackSpec</span>
                                                      {packSpec ? (
                                                                    <>
@@ -183,7 +182,7 @@ export default function Reader() {
                                                                                    <span>H_total <strong>{packSpec.H_total.toFixed(1)}</strong> bits</span>
                                                                                    <span>L_t <strong>{packSpec.L_t_min.toFixed(2)}</strong></span>
                                                                        {packSpec.admitted.length > 0 && (
-                                                                                         <span className="text-emerald-600">✓ {packSpec.admitted.join(', ')}</span>
+                                                                                         <span className="text-emerald-600">â {packSpec.admitted.join(', ')}</span>
                                                                                    )}
                                                                        {lastEvent && (
                                                                                          <span className="text-slate-400 italic">last: {lastEvent}</span>
@@ -191,22 +190,22 @@ export default function Reader() {
                                                                    </>
                                                                  ) : (
                                                                    <span className="text-slate-400 italic">
-                                                                       {skillId ? 'Loading…' : 'Open from a skill card to track convergence'}
+                                                                       {skillId ? 'Loadingâ¦' : 'Open from a skill card to track convergence'}
                                                                    </span>
                                                              )}
                                                  </div>
                             )}
                     
-                        {/* ── Open-in-new-tab escape hatch ─────────────────────────── */}
-                            <div className="mx-4 mt-3 mb-2 flex items-center justify-between">
-                                      <p className="text-xs text-slate-400">Regime Reader — progressive document understanding</p>
+                        {/* ââ Open-in-new-tab escape hatch âââââââââââââââââââââââââââ */}
+                            <div className="mb-2 flex items-center justify-between">
+                                      <p className="text-xs text-slate-400">Regime Reader â progressive document understanding</p>
                                       <a href={iframeSrc} target="_blank" rel="noopener noreferrer"
                                                        className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-emerald-600 transition-colors">
                                                   Open full screen <ExternalLink className="w-3 h-3" aria-hidden="true" />
                                       </a>
                             </div>
                     
-                        {/* ── regimeReader iframe ───────────────────────────────────── */}
+                        {/* ââ regimeReader iframe âââââââââââââââââââââââââââââââââââââ */}
                             <iframe
                                           src={iframeSrc}
                                           title="Regime Reader"
