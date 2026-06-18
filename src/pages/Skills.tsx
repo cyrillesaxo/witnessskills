@@ -288,7 +288,7 @@ export default function Skills() {
                     {/* Practice in Reader — shown when skill tags a defeater location */}
                     {(() => { const loc = rctLocation(skill.tags); return loc ? (
                                   <Link
-                                                      to={`/reader?skill=${loc}`}
+                                                      to={`/reader?skill=${loc}&skill_id=${skill.id}`}
                                                       className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                                                       title={`Practice ${loc} in Regime Reader`}
                                                     >
