@@ -69,7 +69,7 @@ export default function Profile() {
 
   return (
     <AppShell trail={[{ label: 'Dashboard', href: '/' }, { label: 'Profile' }]} onSignOut={handleSignOut}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
+        <div className="space-y-6">
           {/* Profile Hero */}
           <div className="backdrop-blur-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-8 mb-6">
             <div className="flex items-center gap-6">
