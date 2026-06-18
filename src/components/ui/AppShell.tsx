@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Zap, LogOut, Menu, X, Home, BookOpen, Star, User, Briefcase, Shield } from 'lucide-react';
+import { Zap, LogOut, Menu, X, Home, BookOpen, BookMarked, Star, User, Briefcase, Shield } from 'lucide-react';
 import BackgroundGlow from './BackgroundGlow';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../../context/useAuth';
@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 const NAV_LINKS = [
   { to: '/', label: 'Dashboard', icon: Home },
   { to: '/learn', label: 'Learn', icon: BookOpen },
+  { to: '/reader', label: 'Reader', icon: BookMarked },
   { to: '/skills', label: 'Skills', icon: Star },
   { to: '/apply', label: 'Apply', icon: Briefcase },
   { to: '/verify', label: 'Verify', icon: Shield },
