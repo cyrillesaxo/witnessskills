@@ -231,7 +231,7 @@ export default function Dashboard() {
                     return (
                                     <div className="text-center py-12">
                                                     <Brain className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                                    <p className="text-slate-400 text-sm">No skills yet</p>p>
+                                                    <p className="text-slate-400 text-sm">No skills yet</p>
                                                     <Link to="/skills" className="mt-2 inline-block text-teal-400 hover:text-teal-300 text-sm">
                                                                         Add your first skill →
                                                     </Link>
@@ -277,7 +277,7 @@ export default function Dashboard() {
                                                                                                 className="text-[10px] text-slate-500 hover:text-teal-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                                             >
                                                                                             <Target className="w-3 h-3" /> Graph
-                                                                </button>button>
+                                                                </button>
                                                                         )}
                                                     </div>
                                     </div>
