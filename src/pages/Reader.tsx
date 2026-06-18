@@ -199,11 +199,11 @@ export default function Reader() {
                     
                         {/* ── Open-in-new-tab escape hatch ─────────────────────────── */}
                             <div className="mx-4 mt-3 mb-2 flex items-center justify-between">
-                                      <p className="text-xs text-slate-400">Regime Reader — progressive document understanding</p>p>
+                                      <p className="text-xs text-slate-400">Regime Reader — progressive document understanding</p>
                                       <a href={iframeSrc} target="_blank" rel="noopener noreferrer"
                                                        className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-emerald-600 transition-colors">
                                                   Open full screen <ExternalLink className="w-3 h-3" aria-hidden="true" />
-                                      </a>a>
+                                      </a>
                             </div>
                     
                         {/* ── regimeReader iframe ───────────────────────────────────── */}
