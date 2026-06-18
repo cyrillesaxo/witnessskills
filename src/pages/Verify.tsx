@@ -443,7 +443,7 @@ export default function Verify() {
 
   return (
     <AppShell onSignOut={signOut}>
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+      <div className="space-y-8">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
