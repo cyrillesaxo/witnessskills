@@ -197,7 +197,7 @@ export default function ResumeBuilder() {
           </div>
         }
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
+        <div className="space-y-6">
 
           {/* Stats bar */}
           <div className="flex items-center gap-4 mb-6 text-xs text-slate-500 flex-wrap">
